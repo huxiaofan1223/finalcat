@@ -1,0 +1,85 @@
+import { app, BrowserWindow , Menu} from 'electron'
+import '../renderer/store'
+import { exec } from 'child_process'
+const axios = require("axios");
+/**
+ * Set `__static` path to static files in production
+ * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
+ */
+if (process.env.NODE_ENV !== 'development') {
+  global.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
+}
+
+let mainWindow
+
+const winURL = process.env.NODE_ENV === 'development'
+  ? `http://localhost:9080`
+  : `file://${__dirname}/index.html`
+
+function createWindow () {
+  /**
+   * Initial window options
+   */
+  Menu.setApplicationMenu(null)
+  mainWindow = new BrowserWindow({
+    height: 650,
+    useContentSize: true,
+    width: 1200,
+    minHeight:650,
+    minWidth:1200,
+  })
+
+  mainWindow.loadURL(winURL)
+  // mainWindow.webContents.openDevTools();
+  // runExec();
+
+  mainWindow.on('closed', () => {
+    // closePort();
+    mainWindow = null;
+  })
+}
+
+app.on('ready', createWindow)
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    closePort();
+    app.quit();
+  }
+})
+
+app.on('activate', () => {
+  if (mainWindow === null) {
+    createWindow()
+  }
+})
+
+let pythonProcess = null;
+function runExec() {
+  const cmdStr = process.env.NODE_ENV === 'development' ? `python python/flask_http.py`: 'start ./resources/python/config_tool_serve.exe'
+  pythonProcess = exec(cmdStr, {});
+}
+
+function closePort(){
+  let cmd=require('node-cmd');
+  cmd.run('taskkill -f -im config_tool_serve.exe');
+}
+/**
+ * Auto Updater
+ *
+ * Uncomment the following code below and install `electron-updater` to
+ * support auto updating. Code Signing with a valid certificate is required.
+ * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-electron-builder.html#auto-updating
+ */
+
+/*
+import { autoUpdater } from 'electron-updater'
+
+autoUpdater.on('update-downloaded', () => {
+  autoUpdater.quitAndInstall()
+})
+
+app.on('ready', () => {
+  if (process.env.NODE_ENV === 'production') autoUpdater.checkForUpdates()
+})
+ */
