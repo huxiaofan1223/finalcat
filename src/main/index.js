@@ -1,7 +1,5 @@
 import { app, BrowserWindow , Menu} from 'electron'
-import '../renderer/store'
-import { exec } from 'child_process'
-const axios = require("axios");
+// let server = require('../../server/app')
 /**
  * Set `__static` path to static files in production
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
@@ -31,7 +29,7 @@ function createWindow () {
 
   mainWindow.loadURL(winURL)
   // mainWindow.webContents.openDevTools();
-  // runExec();
+  // startServer();
 
   mainWindow.on('closed', () => {
     // closePort();
@@ -53,17 +51,6 @@ app.on('activate', () => {
     createWindow()
   }
 })
-
-let pythonProcess = null;
-function runExec() {
-  const cmdStr = process.env.NODE_ENV === 'development' ? `python python/flask_http.py`: 'start ./resources/python/config_tool_serve.exe'
-  pythonProcess = exec(cmdStr, {});
-}
-
-function closePort(){
-  let cmd=require('node-cmd');
-  cmd.run('taskkill -f -im config_tool_serve.exe');
-}
 /**
  * Auto Updater
  *

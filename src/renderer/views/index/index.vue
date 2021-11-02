@@ -1,11 +1,34 @@
 <template>
   <div class="main">
       <div class="app-left">
-        左边123456
+        <div class="justify-center">
+          数据库
+        </div>
+        <at-menu :active-name="1">
+          <at-submenu v-for="(item,index) in dbTree" :key="index">
+            <template slot="title"><i class="icon icon-life-buoy"></i>{{item.Database}}</template>
+              <at-menu-item v-for="(item2,index2) in item.children" :key="index2" :name="`${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">{{item2}}</at-menu-item>
+          </at-submenu>
+        </at-menu>
       </div>
       <div class="app-right">
         <div id="monaco">
         </div>
+        <div class="padding10 between items-center">
+          <div>
+            <span style="margin-right:20px;">当前连接数据库：<font color="blue">{{nowDatabase}}</font></span>
+            <span>当前连接表：<font color="blue">{{nowTable}}</font></span>
+          </div>
+          <at-button type="primary" @click="sendSql">执行</at-button>
+        </div>
+        <el-table
+          :data="tableData" style="overflow:auto;">
+          <el-table-column :min-width="`${item.name.length*25}px`" v-for="(item,index) in fields" :key="index" :label="item.name">
+            <template slot-scope="scope">
+              <div class="single-row">{{scope.row[item.name]}}</div>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
   </div>
 </template>
@@ -16,17 +39,45 @@ import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
 export default {
     data(){
         return {
-          monacoInstance:null
+          monacoInstance:null,
+          nowDatabase:"",
+          nowTable:"",
+          dbTree:"",
+          tableData: [],
+          fields:[]
         }
     },
     mounted(){
       this.monacoInstance = monaco.editor.create(document.getElementById("monaco"),{
-          value:`select * from users`,
-          language:"sql"
-      })
+          value:``,
+          language:"sql",
+          minimap:false
+      });
+      this.getDbTree();
     },
     methods:{
-      
+      getDbTree(){
+        this.$http.get('/dbtree').then(res=>{
+          this.dbTree = res.data;
+        })
+      },
+      chooseTable(database,table){
+        this.nowTable = table;
+        this.nowDatabase = database;
+        let sql = `select * from ${this.nowDatabase}.${this.nowTable}`;
+        this.monacoInstance.setValue(sql);
+        this.sendSql();
+      },
+      sendSql(){
+        let sql = this.monacoInstance.getValue();
+        let data = {
+          sql
+        }
+        this.$http.post('/sendsql',data).then(res=>{
+          this.tableData = res.data.rows;
+          this.fields = res.data.fields;
+        })
+      }
     }
 }
 </script>
@@ -34,19 +85,29 @@ export default {
 <style scoped lang="scss">
 .main{
   display: flex;
-  padding:1rem;
-  min-height:100vh;
+  height:100vh;
+  width:100vw;
+  overflow: hidden;
   .app-left{
-    min-height:100vh;
-    flex:1;
+    height:100%;
+    width:240px;
+    overflow: auto;
   }
   .app-right{
-    min-height:100vh;
-    flex:3;
+    height:100%;
+    width:calc(100% - 240px);
+    display: flex;
+    flex-direction: column;
     #monaco{
       min-height:100px;
-      border:1px solid #999999;
+      border:1px solid #f7f7f7;
       padding:1rem 0;
+    }
+    .single-row{
+      overflow: hidden;
+      text-overflow:ellipsis;
+      white-space: nowrap;
+      font-size:13px;
     }
   }
 }
