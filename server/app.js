@@ -9,7 +9,7 @@ const options = {
   host: "127.0.0.1",
   port: 3306,
   user: "root",
-  password: "qinqingyyds",
+  password: "root",
   database: "mysql"
 }
 async function getDbTree(options){
@@ -23,7 +23,6 @@ async function getDbTree(options){
     WHERE table_type = 'base table' or table_type ='system view'
   `;
   let data = await db.query(options,tableSql);
-  console.log(data.rows);
   for(let i of rows){
     i.children = [];
     for(let j of data.rows){

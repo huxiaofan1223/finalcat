@@ -64,7 +64,7 @@
     "js-base64": "^3.6.1",
     "monaco-editor-vue": "^1.0.10",
     "monaco-editor-webpack-plugin": "^5.0.0",
-    "mysql": "github:mysqljs/mysql",
+    "mysql": "^2.18.1",
     "node-cmd": "^4.0.0",
     "vue": "^2.5.16",
     "vue-clipboard2": "^0.3.1",
