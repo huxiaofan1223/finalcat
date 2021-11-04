@@ -41,7 +41,7 @@ app.on('ready', createWindow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    closePort();
+    // closePort();
     app.quit();
   }
 })

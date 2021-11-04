@@ -22,7 +22,7 @@
           <at-button type="primary" @click="sendSql">执行</at-button>
         </div>
         <el-table
-          :data="tableData" style="overflow:auto;">
+          :data="tableData" style="overflow:auto;" v-loading="loading">
           <el-table-column :min-width="`${item.name.length*25}px`" v-for="(item,index) in fields" :key="index" :label="item.name">
             <template slot-scope="scope">
                 <div class="single-row" >
@@ -47,7 +47,8 @@ export default {
           nowTable:"",
           dbTree:"",
           tableData: [],
-          fields:[]
+          fields:[],
+          loading:false
         }
     },
     mounted(){
@@ -59,6 +60,9 @@ export default {
       this.getDbTree();
     },
     methods:{
+      tttt(row){
+        console.log(JSON.stringify(row));
+      },
       getDbTree(){
         this.$http.get('/dbtree').then(res=>{
           this.dbTree = res.data;
@@ -76,9 +80,17 @@ export default {
         let data = {
           sql
         }
+        this.loading = true;
         this.$http.post('/sendsql',data).then(res=>{
-          this.tableData = res.data.rows;
-          this.fields = res.data.fields;
+          if(res.data.hasOwnProperty("fields")){
+            this.tableData = res.data.rows;
+            this.fields = res.data.fields;
+          } else {
+            this.$message.success(res.data.rows.message.replace("(",""));
+          }
+          this.loading = false;
+        }).catch(err=>{
+          this.loading = false;
         })
       }
     }
@@ -111,6 +123,9 @@ export default {
       text-overflow:ellipsis;
       white-space: nowrap;
       font-size:13px;
+    }
+    /deep/.el-table td, .el-table th{
+      padding:5px 0;
     }
   }
 }

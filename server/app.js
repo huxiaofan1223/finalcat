@@ -13,7 +13,6 @@ const server = function(){
     else
       next();
   });
-
   const port = 3000
   const options = {
     host: "127.0.0.1",
