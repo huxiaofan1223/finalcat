@@ -1,4 +1,3 @@
-// 创建数据库连接
 const mysql = require("mysql")
 
 var query = (options,sql)=>{
@@ -20,4 +19,7 @@ var query = (options,sql)=>{
         })
     })
 }
-exports.query = query
+const db = {
+    query
+}
+export default db

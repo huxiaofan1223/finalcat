@@ -1,5 +1,5 @@
 import { app, BrowserWindow , Menu} from 'electron'
-// let server = require('../../server/app')
+import server from '../../server/app'
 /**
  * Set `__static` path to static files in production
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
@@ -27,10 +27,10 @@ function createWindow () {
     minWidth:1200,
   })
 
-  mainWindow.loadURL(winURL)
+  mainWindow.loadURL(winURL);
   // mainWindow.webContents.openDevTools();
   // startServer();
-
+  server();
   mainWindow.on('closed', () => {
     // closePort();
     mainWindow = null;

@@ -25,7 +25,10 @@
           :data="tableData" style="overflow:auto;">
           <el-table-column :min-width="`${item.name.length*25}px`" v-for="(item,index) in fields" :key="index" :label="item.name">
             <template slot-scope="scope">
-              <div class="single-row">{{scope.row[item.name]}}</div>
+                <div class="single-row" >
+                  <font v-if="scope.row[item.name]===null">NULL</font>
+                  <font v-else>{{scope.row[item.name]}}</font>
+                </div>
             </template>
           </el-table-column>
         </el-table>

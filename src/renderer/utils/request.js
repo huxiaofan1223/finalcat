@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { Message} from 'element-ui';
 
-let baseURL = 'http://127.0.0.1:8080/http://127.0.0.1:3000'
+let baseURL = 'http://127.0.0.1:3000'
 const service = axios.create({
   baseURL,
   timeout: 10000
