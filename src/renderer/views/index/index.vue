@@ -1,5 +1,5 @@
 <template>
-  <div class="main">
+  <div class="main" @click="parentClick">
       <div class="app-left">
         <div class="justify-center">
           数据库
@@ -25,9 +25,8 @@
           :data="tableData" style="overflow:auto;" v-loading="loading">
           <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name+'-'+getType(item.type)">
             <template slot-scope="scope">
-                <div class="single-row" >
-                  <font v-if="scope.row[item.name]===null">NULL</font>
-                  <font v-else>{{scope.row[item.name]}}</font>
+                <div class="single-row" contenteditable="true" @click.stop="notRow">
+                  {{scope.row[item.name]===null?'NULL':scope.row[item.name]}}
                 </div>
             </template>
           </el-table-column>
@@ -61,6 +60,15 @@ export default {
       this.getDbTree();
     },
     methods:{
+      parentClick(e){
+        let ss = document.querySelectorAll('.table-child')
+        for(let item of ss){
+          item.className = 'table-child single-row'
+        }
+      },
+      notRow(e){
+        e.target.parentNode.className="table-child";
+      },
       getType(type){
         return fieldsTypes[type];
       },
