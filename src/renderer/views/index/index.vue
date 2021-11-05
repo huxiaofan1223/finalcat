@@ -23,7 +23,7 @@
         </div>
         <el-table
           :data="tableData" style="overflow:auto;" v-loading="loading">
-          <el-table-column :min-width="`${item.name.length*25}px`" v-for="(item,index) in fields" :key="index" :label="item.name">
+          <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name+'-'+getType(item.type)">
             <template slot-scope="scope">
                 <div class="single-row" >
                   <font v-if="scope.row[item.name]===null">NULL</font>
@@ -39,6 +39,7 @@
 <script>
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
+import fieldsTypes from '../../utils/types'
 export default {
     data(){
         return {
@@ -60,6 +61,9 @@ export default {
       this.getDbTree();
     },
     methods:{
+      getType(type){
+        return fieldsTypes[type];
+      },
       tttt(row){
         console.log(JSON.stringify(row));
       },
