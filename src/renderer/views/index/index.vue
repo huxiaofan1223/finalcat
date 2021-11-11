@@ -23,11 +23,9 @@
         </div>
         <el-table
           :data="tableData" style="overflow:auto;" v-loading="loading">
-          <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name+'-'+getType(item.type)">
+          <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name+' '+getType(item.type)+'('+item.length+')'">
             <template slot-scope="scope">
-                <div class="single-row" contenteditable="true" @click.stop="notRow">
-                  {{scope.row[item.name]===null?'NULL':scope.row[item.name]}}
-                </div>
+                <div class="table-child single-row" contenteditable="true" @click.stop="notRow" @keydown.enter.prevent="(e)=>submitUpdate(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
             </template>
           </el-table-column>
         </el-table>
@@ -48,7 +46,20 @@ export default {
           dbTree:"",
           tableData: [],
           fields:[],
-          loading:false
+          loading:false,
+          rollBackSpan:null
+        }
+    },
+    created(){
+        window.$ = function(a){
+          let arr = document.querySelectorAll(a);
+          if(arr.length === 0){
+            return null
+          } else if(arr.length === 1){
+            return arr[0]
+          } else {
+            return arr;
+          }
         }
     },
     mounted(){
@@ -61,19 +72,33 @@ export default {
     },
     methods:{
       parentClick(e){
-        let ss = document.querySelectorAll('.table-child')
-        for(let item of ss){
-          item.className = 'table-child single-row'
+        if(this.rollBackSpan!==null){
+          $('.choose-child').innerHTML = this.rollBackSpan;
+          this.rollBackSpan = null;
         }
+        let ss = $('.table-child');
+        if(ss)
+          for(let item of ss){
+            item.className = 'table-child single-row'
+          }
       },
       notRow(e){
-        e.target.parentNode.className="table-child";
+        if(this.rollBackSpan!==null && $('.choose-child') && $('.choose-child').innerHTML !== this.rollBackSpan){
+          $('.choose-child').innerHTML = this.rollBackSpan;
+          this.rollBackSpan = null;
+        } else {
+          this.rollBackSpan = JSON.parse(JSON.stringify(e.target.innerHTML));
+        }
+        setTimeout(() => {
+          let ss = $('.table-child')
+          for(let item of ss){
+            item.className = 'table-child single-row'
+          }
+          e.target.className="table-child choose-child";
+        }, 0);
       },
       getType(type){
-        return fieldsTypes[type];
-      },
-      tttt(row){
-        console.log(JSON.stringify(row));
+        return fieldsTypes[type].toLowerCase();
       },
       getDbTree(){
         this.$http.get('/dbtree').then(res=>{
@@ -86,6 +111,51 @@ export default {
         let sql = `select * from ${this.nowDatabase}.${this.nowTable}`;
         this.monacoInstance.setValue(sql);
         this.sendSql();
+      },
+      async submitUpdate(target,key,value,type,row){
+        try{
+          let primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
+          value = value.replace(/\"(.*)\"/,(all,mat)=>{return `'${mat}'`});
+
+          let sql = `update ${this.nowDatabase}.${this.nowTable} set ${key} = ${value} where ${primaryKey} = ${row[primaryKey]}`;
+          let updateRes = await this.resultSql(sql);
+          if(!updateRes.data.hasOwnProperty("fields")){
+            this.$message.success(updateRes.data.rows.message.replace("(",""));
+            let ss = $('.table-child')
+            for(let item of ss){
+              item.className = 'table-child single-row'
+            }
+          } else {
+            console.log("update_success");
+            this.rollBackSpan = null;
+          }
+        }
+        catch(err){
+          console.log("update_error");
+          // this.rollBackSpan = JSON.parse(JSON.stringify(row[key]));
+        }
+      },
+      async getPrimaryKey(db,table){
+        let sql = `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = '${db}' and TABLE_NAME='${table}'`;
+        let result = await this.resultSql(sql);
+        try{
+          return result.data.rows[0].COLUMN_NAME;
+        }catch(err){
+          console.log('get_primaryKey_error',err);
+          return null;
+        }
+      },
+      async resultSql(sql){
+        let data = {
+          sql
+        }
+        let res = await this.$http.post('/sendsql',data);
+        try{
+          return res;
+        }catch(err){
+          console.log('get_sqlResult_error',err);
+          return null;
+        }
       },
       sendSql(){
         let sql = this.monacoInstance.getValue();
@@ -130,14 +200,37 @@ export default {
       border:1px solid #f7f7f7;
       padding:1rem 0;
     }
+    .table-child{
+      font-size:13px;
+      padding:5px;
+    }
     .single-row{
       overflow: hidden;
       text-overflow:ellipsis;
       white-space: nowrap;
       font-size:13px;
+      outline: none;
+      border:1px solid transparent;
+      padding:5px;
+    }
+    .choose-child{
+      outline: none;
+      white-space: pre-line;
+      line-height:18px;
+      background:white;
+    }
+    .choose-child:focus{
+      border: 1px dashed #777777;
+    }
+    /deep/.el-table td .cell{
+      padding-left:0;
+      padding-right:0;
+    }
+    /deep/ .el-table__body{
+      padding-bottom:50px;
     }
     /deep/.el-table td, .el-table th{
-      padding:5px 0;
+      padding: 0!important;
     }
   }
 }

@@ -9,6 +9,7 @@ var query = (options,sql)=>{
              }
             else { 
                 connection.query(sql, (err,rows,fields) => {
+                    connection.end();
                     if(err){
                         reject(err);
                     } else {
