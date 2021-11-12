@@ -4,12 +4,17 @@
         <div class="justify-center">
           数据库
         </div>
-        <at-menu :active-name="1">
-          <at-submenu v-for="(item,index) in dbTree" :key="index">
-            <template slot="title"><i class="icon icon-life-buoy"></i>{{item.Database}}</template>
-              <at-menu-item v-for="(item2,index2) in item.children" :key="index2" :name="`${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">{{item2}}</at-menu-item>
-          </at-submenu>
-        </at-menu>
+      <el-menu
+        default-active="1"
+        class="el-menu-vertical-demo">
+        <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="index">
+          <template slot="title">
+            <i class="el-icon-setting" style="font-size:13px;"></i>
+            <span>{{item.Database}}</span>
+          </template>
+          <el-menu-item v-for="(item2,index2) in item.children" :key="index2" :index="`${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">{{item2}}</el-menu-item>
+        </el-submenu>
+      </el-menu>
       </div>
       <div class="app-right">
         <div id="monaco">
@@ -25,7 +30,7 @@
           :data="tableData" style="overflow:auto;" v-loading="loading">
           <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name+' '+getType(item.type)+'('+item.length+')'">
             <template slot-scope="scope">
-                <div class="table-child single-row" @mouseover="showThis" @mouseout="hideThis" :style="{'color':scope.row[item.name]===null?'#999999':''}" contenteditable="true" @click.stop="notRow" @keydown.enter.prevent="(e)=>submitUpdate(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
+                <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" contenteditable="true" @click.stop="notRow" @keydown.enter.prevent="(e)=>submitUpdate(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
             </template>
           </el-table-column>
         </el-table>
@@ -202,6 +207,15 @@ export default {
     height:100%;
     width:240px;
     overflow: auto;
+    overflow-x:hidden;
+    /deep/.el-menu-item{
+      height:30px;
+      line-height: 30px;
+    }
+    /deep/.el-submenu__title{
+      height:30px;
+      line-height: 30px;
+    }
   }
   .app-right{
     height:100%;
