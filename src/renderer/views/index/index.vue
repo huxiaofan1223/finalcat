@@ -16,8 +16,8 @@
         </div>
         <div class="padding10 between items-center">
           <div>
-            <span style="margin-right:20px;">当前连接数据库：<font color="blue">{{nowDatabase}}</font></span>
-            <span>当前连接表：<font color="blue">{{nowTable}}</font></span>
+            <span style="margin-right:20px;">当前连接数据库：<font color="blue">{{nowDatabase===''?'无':nowDatabase}}</font></span>
+            <span>当前连接表：<font color="blue">{{nowTable===''?'无':nowTable}}</font></span>
           </div>
           <at-button type="primary" @click="sendSql">执行</at-button>
         </div>
@@ -25,7 +25,7 @@
           :data="tableData" style="overflow:auto;" v-loading="loading">
           <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name+' '+getType(item.type)+'('+item.length+')'">
             <template slot-scope="scope">
-                <div class="table-child single-row" :style="{'color':scope.row[item.name]===null?'#999999':''}" contenteditable="true" @click.stop="notRow" @keydown.enter.prevent="(e)=>submitUpdate(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
+                <div class="table-child single-row" @mouseover="showThis" @mouseout="hideThis" :style="{'color':scope.row[item.name]===null?'#999999':''}" contenteditable="true" @click.stop="notRow" @keydown.enter.prevent="(e)=>submitUpdate(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
             </template>
           </el-table-column>
         </el-table>
@@ -72,15 +72,22 @@ export default {
     },
     methods:{
       parentClick(e){
-        if(this.rollBackSpan!==null){
+        if(this.rollBackSpan!==null&&$('.choose-child')!==null){
           $('.choose-child').innerHTML = this.rollBackSpan;
           this.rollBackSpan = null;
         }
         let ss = $('.table-child');
         if(ss)
           for(let item of ss){
-            item.className = 'table-child single-row'
+            item.classList.remove('choose-child');
+            item.classList.add('single-row');
           }
+      },
+      showThis(e){
+        e.target.classList.remove('single-row');
+      },
+      hideThis(e){
+        e.target.classList.add('single-row');
       },
       notRow(e){
         if(this.rollBackSpan!==null && $('.choose-child') && e.target.className.indexOf('choose-child') === -1&&$('.choose-child').innerHTML!==this.rollBackSpan){
@@ -92,9 +99,11 @@ export default {
         setTimeout(() => {
           let ss = $('.table-child')
           for(let item of ss){
-            item.className = 'table-child single-row'
+            item.classList.remove('choose-child');
+            item.classList.add('single-row');
           }
-          e.target.className="table-child choose-child";
+          e.target.classList.add('choose-child');
+          e.target.classList.remove('single-row');
         }, 0);
       },
       getType(type){
@@ -123,7 +132,8 @@ export default {
             this.$message.success(updateRes.data.rows.message.replace("(",""));
             let ss = $('.table-child')
             for(let item of ss){
-              item.className = 'table-child single-row'
+              item.classList.remove('choose-child');
+              item.classList.add('single-row');
             }
           } else {
             console.log("update_success");
@@ -206,13 +216,13 @@ export default {
     .table-child{
       font-size:13px;
       padding:5px;
+      border:1px solid transparent;
     }
     .single-row{
       overflow: hidden;
       text-overflow:ellipsis;
       white-space: nowrap;
       outline: none;
-      border:1px solid transparent;
       padding:5px;
     }
     .choose-child{
@@ -233,6 +243,9 @@ export default {
     }
     /deep/.el-table td, .el-table th{
       padding: 0!important;
+    }
+    /deep/.el-table::before{
+      height:0;
     }
   }
 }
