@@ -28,6 +28,13 @@
         </div>
         <el-table
           :data="tableData" style="overflow:auto;" v-loading="loading">
+          <el-table-column label="delete" width="70px">
+            <template slot-scope="scope">
+              <div style="display:inline-flex;padding:0 10px;">
+                <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name+' '+getType(item.type)+'('+item.length+')'">
             <template slot-scope="scope">
                 <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" contenteditable="true" @click.stop="notRow" @keydown.enter.prevent="(e)=>submitUpdate(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
@@ -125,6 +132,27 @@ export default {
         let sql = `select * from ${this.nowDatabase}.${this.nowTable}`;
         this.monacoInstance.setValue(sql);
         this.sendSql();
+      },
+      async removeRow(row){
+        this.$confirm('是否删除此列？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(async() => {
+          try{
+            let primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
+            let sql = `delete from ${this.nowDatabase}.${this.nowTable} where ${primaryKey} = ${row[primaryKey]}`;
+            let removeRes = await this.resultSql(sql);
+            this.$message.success('affectedRows Count:'+removeRes.data.rows.affectedRows);
+            if(removeRes.data.rows.affectedRows === 1){
+              let index = this.tableData.map(item=>item[primaryKey]).indexOf(row[primaryKey]);
+              this.tableData.splice(index,1);
+            }
+          }
+          catch(err){
+            console.log("remove_error");
+          }
+        }).catch(() => {});
       },
       async submitUpdate(target,key,value,type,row){
         try{
