@@ -28,7 +28,7 @@
         </div>
         <el-table
           :data="tableData" style="overflow:auto;" v-loading="loading">
-          <el-table-column label="delete" width="70px">
+          <el-table-column label="delete" width="70px" v-if="fields.length!==0">
             <template slot-scope="scope">
               <div style="display:inline-flex;padding:0 10px;">
                 <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
@@ -281,7 +281,7 @@ export default {
       line-height:18px;
     }
     /deep/ .el-table__body{
-      padding-bottom:50px;
+      padding-bottom:15px;
     }
     /deep/.el-table td, .el-table th{
       padding: 0!important;
