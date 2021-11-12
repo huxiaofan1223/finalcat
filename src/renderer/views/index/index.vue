@@ -25,7 +25,7 @@
           :data="tableData" style="overflow:auto;" v-loading="loading">
           <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name+' '+getType(item.type)+'('+item.length+')'">
             <template slot-scope="scope">
-                <div class="table-child single-row" contenteditable="true" @click.stop="notRow" @keydown.enter.prevent="(e)=>submitUpdate(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
+                <div class="table-child single-row" :style="{'color':scope.row[item.name]===null?'#999999':''}" contenteditable="true" @click.stop="notRow" @keydown.enter.prevent="(e)=>submitUpdate(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
             </template>
           </el-table-column>
         </el-table>
@@ -83,7 +83,7 @@ export default {
           }
       },
       notRow(e){
-        if(this.rollBackSpan!==null && $('.choose-child') && $('.choose-child').innerHTML !== this.rollBackSpan){
+        if(this.rollBackSpan!==null && $('.choose-child') && e.target.className.indexOf('choose-child') === -1&&$('.choose-child').innerHTML!==this.rollBackSpan){
           $('.choose-child').innerHTML = this.rollBackSpan;
           this.rollBackSpan = null;
         } else {
@@ -165,7 +165,10 @@ export default {
         this.loading = true;
         this.$http.post('/sendsql',data).then(res=>{
           if(res.data.hasOwnProperty("fields")){
-            this.tableData = res.data.rows;
+            this.tableData = [];
+            setTimeout(() => {
+              this.tableData = res.data.rows;
+            }, 0);
             this.fields = res.data.fields;
           } else {
             this.$message.success(res.data.rows.message.replace("(",""));
@@ -208,7 +211,6 @@ export default {
       overflow: hidden;
       text-overflow:ellipsis;
       white-space: nowrap;
-      font-size:13px;
       outline: none;
       border:1px solid transparent;
       padding:5px;
@@ -216,7 +218,6 @@ export default {
     .choose-child{
       outline: none;
       white-space: pre-line;
-      line-height:18px;
       background:white;
     }
     .choose-child:focus{
@@ -225,6 +226,7 @@ export default {
     /deep/.el-table td .cell{
       padding-left:0;
       padding-right:0;
+      line-height:18px;
     }
     /deep/ .el-table__body{
       padding-bottom:50px;
