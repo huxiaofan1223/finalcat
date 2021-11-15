@@ -7,12 +7,12 @@
       <el-menu
         default-active="1"
         class="el-menu-vertical-demo">
-        <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="index">
+        <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="index+''">
           <template slot="title">
             <i class="el-icon-setting" style="font-size:13px;"></i>
             <span>{{item.Database}}</span>
           </template>
-          <el-menu-item v-for="(item2,index2) in item.children" :key="index2" :index="`${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">{{item2}}</el-menu-item>
+          <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">{{item2}}</el-menu-item>
         </el-submenu>
       </el-menu>
       </div>
@@ -22,24 +22,35 @@
         <div class="padding10 between items-center">
           <div>
             <span style="margin-right:20px;">当前连接数据库：<font color="blue">{{nowDatabase===''?'无':nowDatabase}}</font></span>
-            <span>当前连接表：<font color="blue">{{nowTable===''?'无':nowTable}}</font></span>
+            <span style="margin-right:20px;">当前连接表：<font color="blue">{{nowTable===''?'无':nowTable}}</font></span>
+            <span>共<font color="blue">{{this.tableData.length}}</font>条数据</span>
           </div>
           <at-button type="primary" @click="sendSql">执行</at-button>
         </div>
         <el-table
-          :data="tableData" style="overflow:auto;" v-loading="loading">
-          <el-table-column label="delete" width="70px" v-if="fields.length!==0">
+          :data="tableData" style="overflow:auto;" v-loading="loading" height="200"
+          border>
+          <el-table-column label="delete" width="70px" v-if="canDelete">
             <template slot-scope="scope">
               <div style="display:inline-flex;padding:0 10px;">
                 <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
               </div>
             </template>
           </el-table-column>
-          <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name+' '+getType(item.type)+'('+item.length+')'">
-            <template slot-scope="scope">
-                <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" contenteditable="true" @click.stop="notRow" @keydown.enter.prevent="(e)=>submitUpdate(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
-            </template>
-          </el-table-column>
+          <template v-if="canDelete">
+            <el-table-column :min-width="`150px`" v-for="(item,index) in tableNames" :key="index" :label="`${item.COLUMN_NAME} ${item.COLUMN_TYPE}`">
+              <template slot-scope="scope">
+                  <div class="table-child single-row" :title="scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]" :style="{'color':scope.row[item.COLUMN_NAME]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keydown.enter.prevent="(e)=>updateRow(e.target,item.COLUMN_NAME,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]}}</div>
+              </template>
+            </el-table-column>
+          </template>
+          <template v-if="!canDelete">
+            <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name">
+              <template slot-scope="scope">
+                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keydown.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
+              </template>
+            </el-table-column>
+          </template>
         </el-table>
       </div>
   </div>
@@ -59,8 +70,17 @@ export default {
           tableData: [],
           fields:[],
           loading:false,
-          rollBackSpan:null
+          rollBackSpan:null,
+          tableNames:[]
         }
+    },
+    computed:{
+      canDelete(){
+        let tableArr = Array.from(new Set(this.fields.map(item=>item.table)));
+        let dbArr = Array.from(new Set(this.fields.map(item=>item.db)));
+        console.log(tableArr);
+        return this.fields.length!==0 && this.fields[0].db!=="" && this.fields[0].table!==0 && dbArr.length === 1&& tableArr.length === 1;
+      }
     },
     created(){
         window.$ = function(a){
@@ -95,12 +115,6 @@ export default {
             item.classList.add('single-row');
           }
       },
-      showThis(e){
-        e.target.classList.remove('single-row');
-      },
-      hideThis(e){
-        e.target.classList.add('single-row');
-      },
       notRow(e){
         if(this.rollBackSpan!==null && $('.choose-child') && e.target.className.indexOf('choose-child') === -1&&$('.choose-child').innerHTML!==this.rollBackSpan){
           $('.choose-child').innerHTML = this.rollBackSpan;
@@ -126,10 +140,14 @@ export default {
           this.dbTree = res.data;
         })
       },
-      chooseTable(database,table){
+      async chooseTable(database,table){
         this.nowTable = table;
         this.nowDatabase = database;
         let sql = `select * from ${this.nowDatabase}.${this.nowTable}`;
+        let rows = await this.getFields(database,table);
+        this.tableNames = rows;
+        let total = await this.getTableCount(sql);
+        console.log(total);
         this.monacoInstance.setValue(sql);
         this.sendSql();
       },
@@ -154,7 +172,7 @@ export default {
           }
         }).catch(() => {});
       },
-      async submitUpdate(target,key,value,type,row){
+      async updateRow(target,key,value,type,row){
         try{
           let primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
           value = value.replace(/\"(.*)\"/,(all,mat)=>{return `'${mat}'`});
@@ -175,7 +193,6 @@ export default {
         }
         catch(err){
           console.log("update_error");
-          // this.rollBackSpan = JSON.parse(JSON.stringify(row[key]));
         }
       },
       async getPrimaryKey(db,table){
@@ -220,6 +237,16 @@ export default {
         }).catch(err=>{
           this.loading = false;
         })
+      },
+      async getFields(db,table){
+        let sql = `select * from information_schema.COLUMNS where table_name = '${table}' and table_schema = '${db}';`;
+        let res = await this.resultSql(sql);
+        return res.data.rows;
+      },
+      async getTableCount(sql){
+        let countSql =  `select count(*) as total from (${sql}) as t${new Date().getTime()}`;
+        let res = await this.resultSql(countSql);
+        return res.data.rows[0].total;
       }
     }
 }

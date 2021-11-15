@@ -1,7 +1,8 @@
 const mysql = require("mysql")
 
 var query = (options,sql)=>{
-    const connection = mysql.createConnection(options);
+    let dateStrings = true;
+    const connection = mysql.createConnection({...options,dateStrings});
     return new Promise((resolve,reject)=>{
         connection.connect((err) => {
             if (err) { 

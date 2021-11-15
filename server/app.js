@@ -15,7 +15,7 @@ const server = function(){
   });
   const port = 3000
   const options = {
-    host: "127.0.0.1",
+    host: "emoing.cn",
     port: 3306,
     user: "root",
     password: "qinqingyyds",
