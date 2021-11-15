@@ -27,24 +27,25 @@
           </div>
           <at-button type="primary" @click="sendSql">执行</at-button>
         </div>
-        <el-table
-          :data="tableData" style="overflow:auto;" v-loading="loading" height="200"
-          border>
-          <el-table-column label="delete" width="70px" v-if="canDelete">
+        <el-table :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border v-if="canDelete">
+          <el-table-column label="delete" width="70px">
             <template slot-scope="scope">
               <div style="display:inline-flex;padding:0 10px;">
                 <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
               </div>
             </template>
           </el-table-column>
-          <template v-if="canDelete">
+          <template>
             <el-table-column :min-width="`150px`" v-for="(item,index) in tableNames" :key="index" :label="`${item.COLUMN_NAME} ${item.COLUMN_TYPE}`">
               <template slot-scope="scope">
                   <div class="table-child single-row" :title="scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]" :style="{'color':scope.row[item.COLUMN_NAME]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keydown.enter.prevent="(e)=>updateRow(e.target,item.COLUMN_NAME,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]}}</div>
               </template>
             </el-table-column>
           </template>
-          <template v-if="!canDelete">
+        </el-table>
+
+        <el-table :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border v-if="!canDelete">
+          <template>
             <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name">
               <template slot-scope="scope">
                   <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keydown.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
@@ -52,6 +53,18 @@
             </el-table-column>
           </template>
         </el-table>
+        <div class="between" style="padding:10px;" v-if="hasLimit">
+          <div></div>
+          <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="pageConfig.pageNum"
+            :page-sizes="[20, 30, 50, 100]"
+            :page-size="pageConfig.pageSize"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="pageConfig.total">
+          </el-pagination>
+        </div>
       </div>
   </div>
 </template>
@@ -71,14 +84,20 @@ export default {
           fields:[],
           loading:false,
           rollBackSpan:null,
-          tableNames:[]
+          tableNames:[],
+          pageConfig:{
+            pageNum:1,
+            pageSize:20,
+            total:0
+          },
+          hasLimit:false,
+          sql:""
         }
     },
     computed:{
       canDelete(){
         let tableArr = Array.from(new Set(this.fields.map(item=>item.table)));
         let dbArr = Array.from(new Set(this.fields.map(item=>item.db)));
-        console.log(tableArr);
         return this.fields.length!==0 && this.fields[0].db!=="" && this.fields[0].table!==0 && dbArr.length === 1&& tableArr.length === 1;
       }
     },
@@ -103,6 +122,21 @@ export default {
       this.getDbTree();
     },
     methods:{
+      handleSizeChange(val){
+        this.pageConfig.pageSize = val;
+        this.pageConfig.pageNum = 1;
+        let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
+        let sql = this.sql+` limit ${start},${this.pageConfig.pageSize}`;
+        this.monacoInstance.setValue(sql);
+        this.sendSql();
+      },
+      handleCurrentChange(val){
+        this.pageConfig.pageNum = val;
+        let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
+        let sql = this.sql+` limit ${start},${this.pageConfig.pageSize}`;
+        this.monacoInstance.setValue(sql);
+        this.sendSql();
+      },
       parentClick(e){
         if(this.rollBackSpan!==null&&$('.choose-child')!==null){
           $('.choose-child').innerHTML = this.rollBackSpan;
@@ -144,10 +178,22 @@ export default {
         this.nowTable = table;
         this.nowDatabase = database;
         let sql = `select * from ${this.nowDatabase}.${this.nowTable}`;
+        this.sql = JSON.parse(JSON.stringify(sql));
         let rows = await this.getFields(database,table);
         this.tableNames = rows;
         let total = await this.getTableCount(sql);
-        console.log(total);
+        this.pageConfig.total = total;
+        if(this.pageConfig.pageNum<total){
+          if(sql.includes('limit')){
+            this.hasLimit = false;
+          } else {
+            let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
+            sql += ` limit ${start},${this.pageConfig.pageSize}`;
+            this.hasLimit = true;
+          }
+        } else {
+          this.hasLimit = false;
+        }
         this.monacoInstance.setValue(sql);
         this.sendSql();
       },
@@ -209,34 +255,29 @@ export default {
         let data = {
           sql
         }
+        this.loading = true;
         let res = await this.$http.post('/sendsql',data);
+        this.loading = false;
         try{
           return res;
         }catch(err){
           console.log('get_sqlResult_error',err);
+          this.loading = false;
           return null;
         }
       },
-      sendSql(){
+      async sendSql(){
         let sql = this.monacoInstance.getValue();
-        let data = {
-          sql
+        let res = await this.resultSql(sql);
+        if(res.data.hasOwnProperty("fields")){
+          this.tableData = [];
+          setTimeout(() => {
+            this.tableData = res.data.rows;
+          }, 0);
+          this.fields = res.data.fields;
+        } else {
+          this.$message.success(res.data.rows.message.replace("(",""));
         }
-        this.loading = true;
-        this.$http.post('/sendsql',data).then(res=>{
-          if(res.data.hasOwnProperty("fields")){
-            this.tableData = [];
-            setTimeout(() => {
-              this.tableData = res.data.rows;
-            }, 0);
-            this.fields = res.data.fields;
-          } else {
-            this.$message.success(res.data.rows.message.replace("(",""));
-          }
-          this.loading = false;
-        }).catch(err=>{
-          this.loading = false;
-        })
       },
       async getFields(db,table){
         let sql = `select * from information_schema.COLUMNS where table_name = '${table}' and table_schema = '${db}';`;
@@ -244,7 +285,14 @@ export default {
         return res.data.rows;
       },
       async getTableCount(sql){
+        let type = sql.split(" ")[0].toLowerCase();
         let countSql =  `select count(*) as total from (${sql}) as t${new Date().getTime()}`;
+        if(type === 'select'){
+          countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from');
+          // countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from').replace(/(.*)(limit.*)/i,(all,$1,$2,$3)=>{return $1});
+        } else if(type==='delete'||type==='update'||type==='insert'){
+          return 0;
+        }
         let res = await this.resultSql(countSql);
         return res.data.rows[0].total;
       }
@@ -315,6 +363,10 @@ export default {
     }
     /deep/.el-table::before{
       height:0;
+    }
+    /deep/.el-table th>.cell{
+      padding-left:5px;
+      padding-right:5px;
     }
   }
 }
