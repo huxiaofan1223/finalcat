@@ -121,8 +121,38 @@ export default {
       });
       this.getDbTree();
     },
+    watch:{
+      async sql(val){
+        let sql = JSON.parse(JSON.stringify(val));
+        let total = await this.getTableCount(sql);
+        this.pageConfig.total = total;
+        if(this.pageConfig.pageNum<total){
+          if(sql.includes('limit')){
+            this.hasLimit = false;
+          } else {
+            let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
+            sql = sql +` limit ${start},${this.pageConfig.pageSize}`;
+            this.hasLimit = true;
+          }
+        } else {
+          this.hasLimit = false;
+        }
+        this.monacoInstance.setValue(sql);
+        let res = await this.resultSql(sql);
+        if(res.data.hasOwnProperty("fields")){
+          this.tableData = [];
+          setTimeout(() => {
+            this.tableData = res.data.rows;
+          }, 0);
+          this.fields = res.data.fields;
+        } else {
+          this.$message.success(res.data.rows.message.replace("(",""));
+        }
+      }
+    },
     methods:{
       handleSizeChange(val){
+        console.log(this.sql);
         this.pageConfig.pageSize = val;
         this.pageConfig.pageNum = 1;
         let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
@@ -181,21 +211,6 @@ export default {
         this.sql = JSON.parse(JSON.stringify(sql));
         let rows = await this.getFields(database,table);
         this.tableNames = rows;
-        let total = await this.getTableCount(sql);
-        this.pageConfig.total = total;
-        if(this.pageConfig.pageNum<total){
-          if(sql.includes('limit')){
-            this.hasLimit = false;
-          } else {
-            let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
-            sql += ` limit ${start},${this.pageConfig.pageSize}`;
-            this.hasLimit = true;
-          }
-        } else {
-          this.hasLimit = false;
-        }
-        this.monacoInstance.setValue(sql);
-        this.sendSql();
       },
       async removeRow(row){
         this.$confirm('是否删除此列？', '提示', {
@@ -267,17 +282,7 @@ export default {
         }
       },
       async sendSql(){
-        let sql = this.monacoInstance.getValue();
-        let res = await this.resultSql(sql);
-        if(res.data.hasOwnProperty("fields")){
-          this.tableData = [];
-          setTimeout(() => {
-            this.tableData = res.data.rows;
-          }, 0);
-          this.fields = res.data.fields;
-        } else {
-          this.$message.success(res.data.rows.message.replace("(",""));
-        }
+        this.sql = this.monacoInstance.getValue();
       },
       async getFields(db,table){
         let sql = `select * from information_schema.COLUMNS where table_name = '${table}' and table_schema = '${db}';`;
