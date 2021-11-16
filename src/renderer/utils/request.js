@@ -43,7 +43,7 @@ service.interceptors.response.use(response => {
     return Promise.reject(error.response)
   }
   if(window.navigator.onLine){
-    Message.error("服务器出问题了");
+    Message.error("链接超时");
   }else{
       Message.error("请检查本地网络");
   }

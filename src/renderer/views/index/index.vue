@@ -25,27 +25,30 @@
             <span style="margin-right:20px;">当前连接表：<font color="blue">{{nowTable===''?'无':nowTable}}</font></span>
             <span>共<font color="blue">{{this.tableData.length}}</font>条数据</span>
           </div>
-          <at-button type="primary" @click="sendSql">执行</at-button>
+          <el-button type="primary" size="small" @click="sendSql">执行</el-button>
         </div>
-        <el-table :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border v-if="canDelete">
-          <el-table-column label="delete" width="70px">
-            <template slot-scope="scope">
-              <div style="display:inline-flex;padding:0 10px;">
-                <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
-              </div>
-            </template>
-          </el-table-column>
-          <template>
-            <el-table-column :min-width="`150px`" v-for="(item,index) in tableNames" :key="index" :label="`${item.COLUMN_NAME} ${item.COLUMN_TYPE}`">
+        <el-table :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border>
+          <template v-if="canDelete">
+            <el-table-column label="delete" width="70px">
+              <template slot-scope="scope">
+                <div style="display:inline-flex;padding:0 10px;">
+                  <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column :min-width="`150px`" v-for="(item,index) in tableNames" :key="index" :label="`${item.COLUMN_NAME} ${item.COLUMN_TYPE} ${item.COLUMN_COMMENT}`">
+              <template slot="header">
+                {{item.COLUMN_NAME}}
+                <font color="#555555">{{item.COLUMN_TYPE}}</font>
+                <p style="font-size:12px;color:red;line-height:14px;">{{item.COLUMN_COMMENT}}</p>
+              </template>
               <template slot-scope="scope">
                   <div class="table-child single-row" :title="scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]" :style="{'color':scope.row[item.COLUMN_NAME]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keydown.enter.prevent="(e)=>updateRow(e.target,item.COLUMN_NAME,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]}}</div>
               </template>
             </el-table-column>
           </template>
-        </el-table>
 
-        <el-table :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border v-if="!canDelete">
-          <template>
+          <template v-else>
             <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name">
               <template slot-scope="scope">
                   <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keydown.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
@@ -53,6 +56,7 @@
             </el-table-column>
           </template>
         </el-table>
+
         <div class="between" style="padding:10px;" v-if="hasLimit">
           <div></div>
           <el-pagination
@@ -91,14 +95,16 @@ export default {
             total:0
           },
           hasLimit:false,
-          sql:""
+          sql:"",
+          hasPrimaryKey:false
         }
     },
     computed:{
       canDelete(){
         let tableArr = Array.from(new Set(this.fields.map(item=>item.table)));
         let dbArr = Array.from(new Set(this.fields.map(item=>item.db)));
-        return this.fields.length!==0 && this.fields[0].db!=="" && this.fields[0].table!==0 && dbArr.length === 1&& tableArr.length === 1;
+        let flag = this.fields.length!==0 && this.fields[0].db!=="" && this.fields[0].table!==0 && dbArr.length === 1&& tableArr.length === 1;
+        return flag && this.hasPrimaryKey;
       }
     },
     created(){
@@ -121,24 +127,14 @@ export default {
       });
       this.getDbTree();
     },
-    watch:{
-      async sql(val){
-        let sql = JSON.parse(JSON.stringify(val));
-        let total = await this.getTableCount(sql);
-        this.pageConfig.total = total;
-        if(this.pageConfig.pageNum<total){
-          if(sql.includes('limit')){
-            this.hasLimit = false;
-          } else {
-            let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
-            sql = sql +` limit ${start},${this.pageConfig.pageSize}`;
-            this.hasLimit = true;
-          }
-        } else {
-          this.hasLimit = false;
-        }
+    methods:{
+      async handleSizeChange(val){
+        this.pageConfig.pageSize = val;
+        this.pageConfig.pageNum = 1;
+        let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
+        let sql = this.sql+` limit ${start},${this.pageConfig.pageSize}`;
         this.monacoInstance.setValue(sql);
-        let res = await this.resultSql(sql);
+        let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
           this.tableData = [];
           setTimeout(() => {
@@ -148,24 +144,23 @@ export default {
         } else {
           this.$message.success(res.data.rows.message.replace("(",""));
         }
-      }
-    },
-    methods:{
-      handleSizeChange(val){
-        console.log(this.sql);
-        this.pageConfig.pageSize = val;
-        this.pageConfig.pageNum = 1;
-        let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
-        let sql = this.sql+` limit ${start},${this.pageConfig.pageSize}`;
-        this.monacoInstance.setValue(sql);
-        this.sendSql();
       },
-      handleCurrentChange(val){
+      async handleCurrentChange(val){
         this.pageConfig.pageNum = val;
         let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
         let sql = this.sql+` limit ${start},${this.pageConfig.pageSize}`;
         this.monacoInstance.setValue(sql);
-        this.sendSql();
+        let res = await this.resultSql(sql,true);
+        if(res.data.hasOwnProperty("fields")){
+          this.tableData = [];
+          this.fields = [];
+          setTimeout(() => {
+            this.tableData = res.data.rows;
+            this.fields = res.data.fields;
+          }, 0);
+        } else {
+          this.$message.success(res.data.rows.message.replace("(",""));
+        }
       },
       parentClick(e){
         if(this.rollBackSpan!==null&&$('.choose-child')!==null){
@@ -205,12 +200,49 @@ export default {
         })
       },
       async chooseTable(database,table){
+        this.loading = true;
+        this.pageConfig.pageNum = 1;
         this.nowTable = table;
         this.nowDatabase = database;
         let sql = `select * from ${this.nowDatabase}.${this.nowTable}`;
         this.sql = JSON.parse(JSON.stringify(sql));
+        const primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
+        if(primaryKey!== null) {
+          this.hasPrimaryKey = true;
+        } else {
+          this.hasPrimaryKey = false;
+        }
         let rows = await this.getFields(database,table);
-        this.tableNames = rows;
+        if(this.isLimitSql(sql)){
+          this.hasLimit = false;
+        } else {
+          let total = await this.getTableCount(sql);
+          this.pageConfig.total = total;
+          if(this.pageConfig.pageNum<total){
+              let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
+              sql = sql +` limit ${start},${this.pageConfig.pageSize}`;
+              this.hasLimit = true;
+          } else {
+            this.hasLimit = false;
+          }
+        }
+        this.monacoInstance.setValue(sql);
+        let res = await this.resultSql(sql,true);
+        if(res.data.hasOwnProperty("fields")){
+          // this.$set(this,'tableNames',rows);
+          // this.$set(this,'tableData',res.data.rows);
+          // this.$set(this,'fields',res.data.fields);
+          this.tableNames = [];
+          this.tableData = [];
+          this.fields = [];
+          setTimeout(() => {
+            this.tableNames = rows;
+            this.tableData = res.data.rows;
+            this.fields = res.data.fields;
+          }, 0);
+        } else {
+          this.$message.success(res.data.rows.message.replace("(",""));
+        }
       },
       async removeRow(row){
         this.$confirm('是否删除此列？', '提示', {
@@ -266,23 +298,52 @@ export default {
           return null;
         }
       },
-      async resultSql(sql){
+      async resultSql(sql,loading){
         let data = {
           sql
         }
-        this.loading = true;
-        let res = await this.$http.post('/sendsql',data);
-        this.loading = false;
         try{
+          loading&& (this.loading = true);
+          let res = await this.$http.post('/sendsql',data);
+          loading&& (this.loading = false);
           return res;
         }catch(err){
           console.log('get_sqlResult_error',err);
-          this.loading = false;
+          loading&& (this.loading = false);
           return null;
         }
       },
       async sendSql(){
-        this.sql = this.monacoInstance.getValue();
+        this.loading = true;
+        this.pageConfig.pageNum = 1;
+        this.pageConfig.total = 0;
+        let sql = this.monacoInstance.getValue();
+        if(this.isLimitSql(sql)){
+          this.hasLimit = false;
+        } else {
+          this.sql = JSON.parse(JSON.stringify(sql));
+          let total = await this.getTableCount(sql);
+          this.pageConfig.total = total;
+          if(this.pageConfig.pageNum<total){
+              let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
+              sql = sql +` limit ${start},${this.pageConfig.pageSize}`;
+              this.monacoInstance.setValue(sql);
+              this.hasLimit = true;
+          } else {
+            this.hasLimit = false;
+          }
+        }
+        let res = await this.resultSql(sql,true);
+        if(res.data.hasOwnProperty("fields")){
+          this.tableData = [];
+          this.fields = [];
+          setTimeout(() => {
+            this.tableData = res.data.rows;
+            this.fields = res.data.fields;
+          }, 0);
+        } else {
+          this.$message.success(res.data.rows.message.replace("(",""));
+        }
       },
       async getFields(db,table){
         let sql = `select * from information_schema.COLUMNS where table_name = '${table}' and table_schema = '${db}';`;
@@ -291,15 +352,27 @@ export default {
       },
       async getTableCount(sql){
         let type = sql.split(" ")[0].toLowerCase();
-        let countSql =  `select count(*) as total from (${sql}) as t${new Date().getTime()}`;
+        let countSql =  `select count(1) as total from (${sql}) as t${new Date().getTime()}`;
         if(type === 'select'){
-          countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from');
+          if(!this.isCountSql(sql))
+            countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from');
+          else{
+            countSql = sql;
+          }
           // countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from').replace(/(.*)(limit.*)/i,(all,$1,$2,$3)=>{return $1});
-        } else if(type==='delete'||type==='update'||type==='insert'){
+        } else if(type==='delete'||type==='update'||type==='insert'||type==='explain'){
+          return 0;
+        } else if(type === 'show'||type==='explain'){
           return 0;
         }
         let res = await this.resultSql(countSql);
         return res.data.rows[0].total;
+      },
+      isLimitSql(sql){
+        return /.*limit.*?\d+$/i.test(sql);
+      },
+      isCountSql(sql){
+        return /^select count\(.*?\)((?!,).)*? from/i.test(sql);
       }
     }
 }
@@ -372,6 +445,8 @@ export default {
     /deep/.el-table th>.cell{
       padding-left:5px;
       padding-right:5px;
+      font-weight: normal;
+      color:#222222;
     }
   }
 }

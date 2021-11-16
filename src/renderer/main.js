@@ -5,10 +5,7 @@ import router from './router'
 import store from './store'
 import request from './utils/request'
 
-
-import AtComponents from 'at-ui'
-import 'at-ui-style/css/at.min.css'
-Vue.use(AtComponents)
+// import 'at-ui-style/css/at.min.css'
 
 import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
