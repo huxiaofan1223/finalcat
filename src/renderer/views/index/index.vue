@@ -229,9 +229,6 @@ export default {
         this.monacoInstance.setValue(sql);
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
-          // this.$set(this,'tableNames',rows);
-          // this.$set(this,'tableData',res.data.rows);
-          // this.$set(this,'fields',res.data.fields);
           this.tableNames = [];
           this.tableData = [];
           this.fields = [];
@@ -359,7 +356,6 @@ export default {
           else{
             countSql = sql;
           }
-          // countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from').replace(/(.*)(limit.*)/i,(all,$1,$2,$3)=>{return $1});
         } else if(type==='delete'||type==='update'||type==='insert'||type==='explain'){
           return 0;
         } else if(type === 'show'||type==='explain'){
@@ -433,18 +429,25 @@ export default {
       padding-right:0;
       line-height:18px;
     }
+    /deep/.el-table th .cell{
+      padding-left:0;
+      padding-right:0;
+      line-height:18px;
+    }
     /deep/ .el-table__body{
       padding-bottom:15px;
     }
-    /deep/.el-table td, .el-table th{
+    /deep/.el-table td{
+      padding: 0!important;
+    }
+    /deep/.el-table th{
       padding: 0!important;
     }
     /deep/.el-table::before{
       height:0;
     }
     /deep/.el-table th>.cell{
-      padding-left:5px;
-      padding-right:5px;
+      padding:8px 5px;
       font-weight: normal;
       color:#222222;
     }
