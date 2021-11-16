@@ -71,6 +71,16 @@ const server = function(){
       res.json({msg,code:400});
     }
   })
+  app.post('/valideconfig', async(req, res) => {
+    try {
+      let option = req.body;
+      console.log(option);
+      let data = await db.query(options,sql);
+      res.json({msg:"操作成功",data,code:200});
+    } catch (msg) {
+      res.json({msg,code:400});
+    }
+  })
 
   app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`)

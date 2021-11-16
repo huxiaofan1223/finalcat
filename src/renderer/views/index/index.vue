@@ -2,8 +2,9 @@
   <div class="main" @click="parentClick">
       <div class="app-left">
         <div class="justify-center">
-          数据库
+          数据库{{$store.state.Counter.main}}
         </div>
+        <el-button @click="()=>{$store.dispatch('someAsyncTask')}">加1</el-button>
       <el-menu
         default-active="1"
         class="el-menu-vertical-demo">
@@ -125,7 +126,17 @@ export default {
           language:"sql",
           minimap:false
       });
-      this.getDbTree();
+      // this.getDbTree();
+      const options = {
+        host: "emoing.cn",
+        port: 3306,
+        user: "root",
+        password: "qinqingyyds",
+        database: "mysql"
+      }
+      console.log(this.$store.state);
+      // this.$store.dispatch('valideDbConfig',options);
+      this.$store.dispatch('someAsyncTask');
     },
     methods:{
       async handleSizeChange(val){
