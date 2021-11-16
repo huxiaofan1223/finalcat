@@ -16,7 +16,7 @@
     margin:0;
     padding:0;
     color: #3F536E;
-    line-height: 1.5;
+    line-height: 1.3;
     font-family: -apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","\5FAE\8F6F\96C5\9ED1",Arial,sans-serif;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
@@ -57,5 +57,15 @@
   }
   .el-button.is-circle{
     border-radius: 50% !important;
+  }
+  .el-message__content{
+    line-height: 1.3!important;
+  }
+  .el-input__inner{
+    border-radius:1px!important;
+    padding:0 8px !important;
+  }
+  .el-dialog__body{
+    padding:0 15px!important;
   }
 </style>

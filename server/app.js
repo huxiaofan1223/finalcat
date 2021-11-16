@@ -14,13 +14,6 @@ const server = function(){
       next();
   });
   const port = 3000
-  const options = {
-    host: "emoing.cn",
-    port: 3306,
-    user: "root",
-    password: "qinqingyyds",
-    database: "mysql"
-  }
   async function getDbTree(options){
     try {
       let dbsql = "show databases";
@@ -47,15 +40,11 @@ const server = function(){
     }
   }
   app.get('/', async(req, res) => {
-    try {
-      let rows = await getDbTree(options);
-      res.json({rows});
-    } catch (msg) {
-      res.json({msg,code:400});
-    }
+    return "服务已启动";
   })
-  app.get('/dbtree', async(req, res) => {
+  app.post('/dbtree', async(req, res) => {
     try {
+      let options = req.body;
       let data = await getDbTree(options);
       res.json({msg:"操作成功",data,code:200});
     } catch (msg) {
@@ -65,6 +54,7 @@ const server = function(){
   app.post('/sendsql', async(req, res) => {
     try {
       let sql = req.body.sql;
+      let options = req.body.options;
       let data = await db.query(options,sql);
       res.json({msg:"操作成功",data,code:200});
     } catch (msg) {
@@ -74,8 +64,7 @@ const server = function(){
   app.post('/valideconfig', async(req, res) => {
     try {
       let option = req.body;
-      console.log(option);
-      let data = await db.query(options,sql);
+      let data = await db.test(option);
       res.json({msg:"操作成功",data,code:200});
     } catch (msg) {
       res.json({msg,code:400});

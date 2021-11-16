@@ -1,43 +1,54 @@
 <template>
   <div class="main" @click="parentClick">
       <div class="app-left">
-        <div class="justify-center">
-          数据库{{$store.state.Counter.main}}
+        <div class="justify-center" style="margin:10px 0;">
+          <el-button size="mini" type="primary" @click="addConfig">新增数据库</el-button>
         </div>
-        <el-button @click="()=>{$store.dispatch('someAsyncTask')}">加1</el-button>
-      <el-menu
-        default-active="1"
-        class="el-menu-vertical-demo">
-        <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="index+''">
-          <template slot="title">
-            <i class="el-icon-setting" style="font-size:13px;"></i>
-            <span>{{item.Database}}</span>
-          </template>
-          <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">{{item2}}</el-menu-item>
-        </el-submenu>
-      </el-menu>
+      <div class="justify-center" style="padding:100px 0;" v-if="$store.state.Db.dbList.length===0">
+        暂无数据库
+      </div>
+      <template v-else>
+        <el-menu
+          default-active="1"
+          class="el-menu-vertical-demo"
+          :unique-opened="true">
+          <el-submenu v-for="(db,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.native="(e)=>{getDbTree(db)}">
+            <template slot="title">
+              <!-- <i class="el-icon-setting" style="font-size:13px;"></i> -->
+              <span>{{db.name}}</span>
+            </template>
+            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.native="()=>{chooseOptions.database = item.Database}">
+              <template slot="title">
+                <!-- <i class="el-icon-setting" style="font-size:13px;"></i> -->
+                <span>{{item.Database}}</span>
+              </template>
+              <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">{{item2}}</el-menu-item>
+            </el-submenu>
+          </el-submenu>
+        </el-menu>
+      </template>
       </div>
       <div class="app-right">
         <div id="monaco">
         </div>
         <div class="padding10 between items-center">
           <div>
+            <span style="margin-right:20px;">当前连接地址：<font color="blue">{{chooseOptions.host===undefined?'无':chooseOptions.host}}</font></span>
             <span style="margin-right:20px;">当前连接数据库：<font color="blue">{{nowDatabase===''?'无':nowDatabase}}</font></span>
-            <span style="margin-right:20px;">当前连接表：<font color="blue">{{nowTable===''?'无':nowTable}}</font></span>
             <span>共<font color="blue">{{this.tableData.length}}</font>条数据</span>
           </div>
           <el-button type="primary" size="small" @click="sendSql">执行</el-button>
         </div>
         <el-table :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border>
           <template v-if="canDelete">
-            <el-table-column label="delete" width="70px">
+            <el-table-column label="DEL" width="70px">
               <template slot-scope="scope">
                 <div style="display:inline-flex;padding:0 10px;">
                   <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column :min-width="`150px`" v-for="(item,index) in tableNames" :key="index" :label="`${item.COLUMN_NAME} ${item.COLUMN_TYPE} ${item.COLUMN_COMMENT}`">
+            <el-table-column :min-width="`${item.COLUMN_NAME} ${item.COLUMN_TYPE}`.length*8" v-for="(item,index) in tableNames" :key="index" :label="`${item.COLUMN_NAME} ${item.COLUMN_TYPE} ${item.COLUMN_COMMENT}`">
               <template slot="header">
                 {{item.COLUMN_NAME}}
                 <font color="#555555">{{item.COLUMN_TYPE}}</font>
@@ -71,6 +82,38 @@
           </el-pagination>
         </div>
       </div>
+      <el-dialog
+        title="添加配置"
+        :visible.sync="configDialogVisible"
+        width="400px">
+        <el-form :model="configForm" :rules="rules" ref="configForm" label-width="55px" class="demo-configForm">
+          <el-form-item label="名称" prop="name">
+            <el-input size="small" v-model="configForm.name"></el-input>
+          </el-form-item>
+          <el-row>
+            <el-col :span="14">
+              <el-form-item label="地址" prop="host">
+                <el-input size="small" v-model="configForm.host"></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="10">
+              <el-form-item label="端口" prop="port">
+                <el-input size="small" v-model.number="configForm.port"></el-input>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="账号" prop="user">
+            <el-input size="small" v-model="configForm.user"></el-input>
+          </el-form-item>
+          <el-form-item label="密码" prop="password">
+            <el-input size="small" type="password" v-model="configForm.password"></el-input>
+          </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="hideConfig('configForm')" size="mini">取 消</el-button>
+          <el-button type="primary" @click="submitConfig('configForm')" size="mini">确 定</el-button>
+        </span>
+      </el-dialog>
   </div>
 </template>
 
@@ -97,7 +140,33 @@ export default {
           },
           hasLimit:false,
           sql:"",
-          hasPrimaryKey:false
+          hasPrimaryKey:false,
+          configForm: {
+            host: "",
+            port: 3306,
+            user: "",
+            password: "",
+            database: ""
+          },
+          chooseOptions:{},
+          configDialogVisible:false,
+          rules: {
+            name: [
+              { required: true, message: '请输入名称', trigger: 'blur' },
+            ],
+            host: [
+              { required: true, message: '请输入地址', trigger: 'blur' },
+            ],
+            port: [
+              { required: true, message: '请输入端口', trigger: 'blur' },
+            ],
+            user: [
+              { required: true, message: '请输入用户名', trigger: 'blur' },
+            ],
+            password: [
+              { required: true, message: '请输入密码', trigger: 'blur' },
+            ],
+          }
         }
     },
     computed:{
@@ -126,19 +195,48 @@ export default {
           language:"sql",
           minimap:false
       });
-      // this.getDbTree();
-      const options = {
-        host: "emoing.cn",
-        port: 3306,
-        user: "root",
-        password: "qinqingyyds",
-        database: "mysql"
-      }
-      console.log(this.$store.state);
-      // this.$store.dispatch('valideDbConfig',options);
-      this.$store.dispatch('someAsyncTask');
     },
     methods:{
+      addConfig(){
+        this.configDialogVisible = true;
+        this.configForm.port = 3306;
+      },
+      hideConfig(form){
+        this.$refs[form].resetFields();
+        this.configForm = {};
+        this.configDialogVisible = false;
+      },
+      submitConfig(formName){
+        
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            if(this.isConfigExist(this.configForm)){
+              this.$message.error('配置已存在');
+              return;
+            }
+            this.$store.dispatch('valideDbConfig',this.configForm).then(res=>{
+              this.$store.dispatch('addDbConfig',this.configForm);
+              this.$message.success("操作成功");
+              this.configForm = {};
+              this.configDialogVisible = false;
+            }).catch(err=>{
+              console.log(err);
+            })
+          } else {
+            console.log('error submit!!');
+            return false;
+          }
+        });
+      },
+      isConfigExist(config){
+        let temp = JSON.parse(JSON.stringify(config));
+        delete temp.name;
+        return this.$store.state.Db.dbList.map(item=>{
+          let tempItem = JSON.parse(JSON.stringify(item));
+          delete tempItem.name;
+          return JSON.stringify(tempItem);
+        }).indexOf(JSON.stringify(temp)) !== -1;
+      },
       async handleSizeChange(val){
         this.pageConfig.pageSize = val;
         this.pageConfig.pageNum = 1;
@@ -205,8 +303,10 @@ export default {
       getType(type){
         return fieldsTypes[type].toLowerCase();
       },
-      getDbTree(){
-        this.$http.get('/dbtree').then(res=>{
+      getDbTree(options){
+        this.chooseOptions = options;
+        let data = options;
+        this.$http.post('/dbtree',data).then(res=>{
           this.dbTree = res.data;
         })
       },
@@ -215,7 +315,7 @@ export default {
         this.pageConfig.pageNum = 1;
         this.nowTable = table;
         this.nowDatabase = database;
-        let sql = `select * from ${this.nowDatabase}.${this.nowTable}`;
+        let sql = `select * from ${this.nowTable}`;
         this.sql = JSON.parse(JSON.stringify(sql));
         const primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
         if(primaryKey!== null) {
@@ -307,8 +407,10 @@ export default {
         }
       },
       async resultSql(sql,loading){
+        let {chooseOptions} = this;
         let data = {
-          sql
+          sql,
+          options:chooseOptions
         }
         try{
           loading&& (this.loading = true);

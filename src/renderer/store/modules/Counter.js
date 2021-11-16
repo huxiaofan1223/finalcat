@@ -12,10 +12,12 @@ const mutations = {
 }
 
 const actions = {
-  someAsyncTask ({ commit }) {
-    // do something async
-    console.log("yungxinlge");
-    commit('INCREMENT_MAIN_COUNTER')
+  someAsyncTask({ commit }) {
+    console.log("yunxingle");
+    commit('INCREMENT_MAIN_COUNTER');
+  },
+  INCREMENT_MAIN_COUNTER({commit}){
+    commit('INCREMENT_MAIN_COUNTER');
   }
 }
 

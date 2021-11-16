@@ -5,8 +5,6 @@ import router from './router'
 import store from './store'
 import request from './utils/request'
 
-// import 'at-ui-style/css/at.min.css'
-
 import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 Vue.use(ElementUI);
@@ -19,9 +17,8 @@ Vue.prototype.$http = request;
 Vue.config.productionTip = false
 
 new Vue({
-  el: '#app',
   components: { App },
   router,
   store,
   template: '<App/>'
-})
+}).$mount('#app')

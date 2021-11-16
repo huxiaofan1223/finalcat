@@ -1,8 +1,8 @@
 const mysql = require("mysql")
 
-var query = (options,sql)=>{
+let query = (options,sql)=>{
     let dateStrings = true;
-    const connection = mysql.createConnection({...options,dateStrings});
+    let connection = mysql.createConnection({...options,dateStrings});
     return new Promise((resolve,reject)=>{
         connection.connect((err) => {
             if (err) { 
@@ -21,7 +21,23 @@ var query = (options,sql)=>{
         })
     })
 }
+let test = (options)=>{
+    let connection = mysql.createConnection(options);
+    return new Promise((resolve,reject)=>{
+        connection.connect((err) => {
+            console.log("err");
+            console.log(err);
+            console.log("err");
+            if(err){
+                reject(err);
+            } else {
+                connection.end();
+                resolve(true);
+            }
+        })
+    })
+}
 const db = {
-    query
+    query,test
 }
 export default db

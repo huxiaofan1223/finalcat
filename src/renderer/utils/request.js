@@ -23,9 +23,15 @@ service.interceptors.response.use(response => {
     return response.data;
   } else {
     let msg = response.data.msg;
-    if(typeof msg !== 'string')
-      msg = JSON.stringify(msg);
+    if(typeof msg === 'object'){
+      let msgArr = [];
+      for(let i in msg){
+        msgArr.push(`${i}：${msg[i]}`);
+      }
+      msg = msgArr.join("<br>");
+    }
     Message({
+      dangerouslyUseHTMLString: true,
       type:"error",
       duration:3000,
       showClose:true,

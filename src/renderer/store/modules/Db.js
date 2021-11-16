@@ -1,3 +1,4 @@
+import db from '../../../../server/db';
 import request from '../../utils/request'
 const state = {
   dbList:[]
@@ -5,31 +6,33 @@ const state = {
 
 const mutations = {
   ADD_DB_CONFIG (state,config) {
-    state.dbList.push(config);
+    if(config !== null)
+      state.dbList.push(config);
   },
   REMOVE_DB_CONFIG (state,config) {
     let index = state.map(item=>JSON.stringify(item)).indexOf(JSON.stringify(config));
     if(index !== -1){
       state.splice(index,1);
     }
-  }
+  },
+  CLEAR_DB_CONFIG (state) {
+    state.dbList = []
+  },
 }
 
 const actions = {
   valideDbConfig({ commit },config) {
-    console.log("运行了");
-    console.log("运行了");
     let data = config;
-    console.log("运行了");
-    request.post('valideconfig',data).then(res=>{
-      console.log(res);
-      commit('ADD_DB_CONFIG',config);
-    }).catch(err=>{
-      console.log("error",err);
-    })
+    return request.post('/valideconfig',data);
+  },
+  addDbConfig({ commit },config) {
+    commit('ADD_DB_CONFIG',config);
   },
   removeDbConfig({ commit },config){
     commit('REMOVE_DB_CONFIG',config);
+  },
+  clearDbList({commit}){
+    commit('CLEAR_DB_CONFIG');
   }
 }
 
