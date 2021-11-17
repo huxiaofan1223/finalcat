@@ -68,4 +68,25 @@
   .el-dialog__body{
     padding:0 15px!important;
   }
+
+/*定义滚动条高宽及背景 高宽分别对应横竖滚动条的尺寸*/
+::-webkit-scrollbar
+{
+	width: 8px;
+	height: 8px;
+	background-color: #F5F5F5;
+}
+ 
+/*定义滚动条轨道 内阴影+圆角*/
+::-webkit-scrollbar-track
+{
+	/* border-radius: 10px; */
+	background-color: white;
+}
+/*定义滑块 内阴影+圆角*/
+::-webkit-scrollbar-thumb
+{
+	border-radius: 4px;
+	background-color: #999999;
+}
 </style>
