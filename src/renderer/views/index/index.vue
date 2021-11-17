@@ -14,8 +14,7 @@
           :unique-opened="true">
           <el-submenu v-for="(db,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.native="(e)=>{getDbTree(db)}">
             <template slot="title">
-              <i @click.stop="deleteConfig(db)" class="el-icon-delete" style="font-size:13px;color:red;"></i>
-              <span>{{db.name}} <font color="#999999">{{db.host}}:{{db.port}}</font></span>
+              <i @click.stop="deleteConfig(db)" class="el-icon-delete" style="font-size:13px;color:red;width:20px;margin-right:0;"></i><span>{{db.name}} <font color="#999999" size="2">{{db.host}}:{{db.port}}</font></span>
             </template>
             <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
@@ -41,7 +40,7 @@
         </div>
         <el-table :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border>
           <template v-if="canDelete">
-            <el-table-column label="DEL" width="70px">
+            <el-table-column label="DEL" width="50px">
               <template slot-scope="scope">
                 <div style="display:inline-flex;padding:0 10px;">
                   <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
@@ -520,7 +519,7 @@ export default {
   overflow: hidden;
   .app-left{
     height:100%;
-    width:240px;
+    width:260px;
     overflow: auto;
     overflow-x:hidden;
     /deep/.el-menu-item{
@@ -534,7 +533,7 @@ export default {
   }
   .app-right{
     height:100%;
-    width:calc(100% - 240px);
+    width:calc(100% - 260px);
     display: flex;
     flex-direction: column;
     #monaco{
