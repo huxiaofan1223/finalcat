@@ -58,8 +58,15 @@
   .el-button.is-circle{
     border-radius: 50% !important;
   }
+  .el-message{
+    border-radius:0 !important;
+    border:1px dashed transparent!important;
+    padding:8px!important;
+    min-width:150px!important;
+  }
   .el-message__content{
     line-height: 1.3!important;
+    font-size:12.5px!important;
   }
   .el-input__inner{
     border-radius:1px!important;
@@ -70,7 +77,11 @@
     padding-top:15px !important;
     padding-left:15px !important;
   }
-
+  .el-message-box,.el-dialog{
+    border-radius:1px !important;
+    box-shadow:none!important;
+    border:none!important;
+  }
 /*定义滚动条高宽及背景 高宽分别对应横竖滚动条的尺寸*/
 ::-webkit-scrollbar
 {
