@@ -17,7 +17,7 @@
               <!-- <i class="el-icon-setting" style="font-size:13px;"></i> -->
               <span>{{db.name}}</span>
             </template>
-            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.native="()=>{chooseOptions.database = item.Database}">
+            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
                 <!-- <i class="el-icon-setting" style="font-size:13px;"></i> -->
                 <span>{{item.Database}}</span>
@@ -75,7 +75,7 @@
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
             :current-page="pageConfig.pageNum"
-            :page-sizes="[20, 30, 50, 100]"
+            :page-sizes="[10,20, 30, 50, 100 ,200,500]"
             :page-size="pageConfig.pageSize"
             layout="total, sizes, prev, pager, next, jumper"
             :total="pageConfig.total">
@@ -207,7 +207,6 @@ export default {
         this.configDialogVisible = false;
       },
       submitConfig(formName){
-        
         this.$refs[formName].validate((valid) => {
           if (valid) {
             if(this.isConfigExist(this.configForm)){
@@ -277,11 +276,17 @@ export default {
           this.rollBackSpan = null;
         }
         let ss = $('.table-child');
-        if(ss)
-          for(let item of ss){
-            item.classList.remove('choose-child');
-            item.classList.add('single-row');
+        if(ss){
+          if(Object.prototype.toString.call(ss) === '[object NodeList]'){
+            for(let item of ss){
+              item.classList.remove('choose-child');
+              item.classList.add('single-row');
+            }
+          } else {
+              ss.classList.remove('choose-child');
+              ss.classList.add('single-row');
           }
+        }
       },
       notRow(e){
         if(this.rollBackSpan!==null && $('.choose-child') && e.target.className.indexOf('choose-child') === -1&&$('.choose-child').innerHTML!==this.rollBackSpan){
@@ -304,7 +309,7 @@ export default {
         return fieldsTypes[type].toLowerCase();
       },
       getDbTree(options){
-        this.chooseOptions = options;
+        this.chooseOptions = JSON.parse(JSON.stringify(options));
         let data = options;
         this.$http.post('/dbtree',data).then(res=>{
           this.dbTree = res.data;
@@ -407,7 +412,13 @@ export default {
         }
       },
       async resultSql(sql,loading){
+        if(this.chooseOptions.host === undefined){
+          this.$message.error('请选择连接');
+          this.loading = false;
+          return;
+        }
         let {chooseOptions} = this;
+        chooseOptions.database = this.nowDatabase;
         let data = {
           sql,
           options:chooseOptions
