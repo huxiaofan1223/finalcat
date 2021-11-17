@@ -14,8 +14,8 @@
           :unique-opened="true">
           <el-submenu v-for="(db,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.native="(e)=>{getDbTree(db)}">
             <template slot="title">
-              <!-- <i class="el-icon-setting" style="font-size:13px;"></i> -->
-              <span>{{db.name}}</span>
+              <i @click.stop="deleteConfig(db)" class="el-icon-delete" style="font-size:13px;color:red;"></i>
+              <span>{{db.name}} <font color="#999999">{{db.host}}:{{db.port}}</font></span>
             </template>
             <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
@@ -55,7 +55,7 @@
                 <p style="font-size:12px;color:red;line-height:14px;">{{item.COLUMN_COMMENT}}</p>
               </template>
               <template slot-scope="scope">
-                  <div class="table-child single-row" :title="scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]" :style="{'color':scope.row[item.COLUMN_NAME]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keydown.enter.prevent="(e)=>updateRow(e.target,item.COLUMN_NAME,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]}}</div>
+                  <div class="table-child single-row" :title="scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]" :style="{'color':scope.row[item.COLUMN_NAME]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keypress.enter.prevent="(e)=>updateRow(e.target,item.COLUMN_NAME,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]}}</div>
               </template>
             </el-table-column>
           </template>
@@ -63,7 +63,7 @@
           <template v-else>
             <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name">
               <template slot-scope="scope">
-                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keydown.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
+                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keypress.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
               </template>
             </el-table-column>
           </template>
@@ -86,7 +86,7 @@
         title="添加配置"
         :visible.sync="configDialogVisible"
         width="400px">
-        <el-form :model="configForm" :rules="rules" ref="configForm" label-width="55px" class="demo-configForm">
+        <el-form :model="configForm" :rules="rules" ref="configForm" label-width="55px" class="demo-configForm" @submit.native.prevent @keyup.enter.native="submitConfig('configForm')">
           <el-form-item label="名称" prop="name">
             <el-input size="small" v-model="configForm.name"></el-input>
           </el-form-item>
@@ -111,7 +111,7 @@
         </el-form>
         <span slot="footer" class="dialog-footer">
           <el-button @click="hideConfig('configForm')" size="mini">取 消</el-button>
-          <el-button type="primary" @click="submitConfig('configForm')" size="mini">确 定</el-button>
+          <el-button type="primary" native-type="submit" @click="submitConfig('configForm')" size="mini">确 定</el-button>
         </span>
       </el-dialog>
   </div>
@@ -200,6 +200,16 @@ export default {
       addConfig(){
         this.configDialogVisible = true;
         this.configForm.port = 3306;
+      },
+      deleteConfig(config){
+        this.$confirm('是否删除此连接？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(async() => {
+          this.$store.dispatch('removeDbConfig',config);
+          this.$message.success('操作成功');
+        })
       },
       hideConfig(form){
         this.$refs[form].resetFields();
@@ -430,15 +440,19 @@ export default {
           return res;
         }catch(err){
           console.log('get_sqlResult_error',err);
-          loading&& (this.loading = false);
+          this.loading = false;
           return null;
         }
       },
       async sendSql(){
+        let sql = this.monacoInstance.getValue();
+        if(sql === ''){
+          this.$message.error("请输入sql");
+          return;
+        }
         this.loading = true;
         this.pageConfig.pageNum = 1;
         this.pageConfig.total = 0;
-        let sql = this.monacoInstance.getValue();
         if(this.isLimitSql(sql)){
           this.hasLimit = false;
         } else {

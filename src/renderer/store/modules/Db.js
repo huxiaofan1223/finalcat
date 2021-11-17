@@ -10,9 +10,9 @@ const mutations = {
       state.dbList.push(config);
   },
   REMOVE_DB_CONFIG (state,config) {
-    let index = state.map(item=>JSON.stringify(item)).indexOf(JSON.stringify(config));
+    let index = state.dbList.map(item=>JSON.stringify(item)).indexOf(JSON.stringify(config));
     if(index !== -1){
-      state.splice(index,1);
+      state.dbList.splice(index,1);
     }
   },
   CLEAR_DB_CONFIG (state) {

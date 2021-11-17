@@ -66,7 +66,9 @@
     padding:0 8px !important;
   }
   .el-dialog__body{
-    padding:0 15px!important;
+    padding:0 30px!important;
+    padding-top:15px !important;
+    padding-left:15px !important;
   }
 
 /*定义滚动条高宽及背景 高宽分别对应横竖滚动条的尺寸*/
