@@ -15,11 +15,11 @@
   html,body{
     margin:0;
     padding:0;
-    color: #3F536E;
+    color:#444444;
     line-height: 1.3;
-    font-family: -apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","\5FAE\8F6F\96C5\9ED1",Arial,sans-serif;
-    font-size: 14px;
-    -webkit-font-smoothing: antialiased;
+    font-family: PingFangSC-Regular, PingFang SC, 微软雅黑;
+    font-size: 15px;
+    font-weight: normal;
   }
   *{
     box-sizing:border-box;
