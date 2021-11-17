@@ -17,7 +17,7 @@ const server = function(){
   async function getDbTree(options){
     try {
       let dbsql = "show databases";
-      let {rows} = await db.query(options,dbsql);
+      let dbs = await db.query(options,dbsql);
       let tableSql = `
         SELECT 
         table_schema,table_name
@@ -26,7 +26,7 @@ const server = function(){
         WHERE table_type = 'base table' or table_type ='system view'
       `;
       let data = await db.query(options,tableSql);
-      for(let i of rows){
+      for(let i of dbs.rows){
         i.children = [];
         for(let j of data.rows){
           if(j.table_schema === i.Database){
@@ -34,9 +34,9 @@ const server = function(){
           }
         }
       }
-      return rows;
+      return Promise.resolve(dbs.rows);
     } catch (error) {
-      console.log(error);
+      return Promise.reject(error);
     }
   }
   app.get('/', async(req, res) => {
