@@ -5,9 +5,6 @@ let query = (options,sql)=>{
     let connection = mysql.createConnection({...options,dateStrings});
     return new Promise((resolve,reject)=>{
         connection.connect((err) => {
-            console.log("error");
-            console.log(err);
-            console.log("error");
             if (err) { 
                 reject(err);
             }
