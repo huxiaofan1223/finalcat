@@ -84,7 +84,8 @@
       <el-dialog
         title="添加配置"
         :visible.sync="configDialogVisible"
-        width="400px">
+        width="400px"
+        :before-close="hideConfig">
         <el-form :model="configForm" :rules="rules" ref="configForm" label-width="55px" class="demo-configForm" @submit.native.prevent @keyup.enter.native="submitConfig('configForm')">
           <el-form-item label="名称" prop="name">
             <el-input size="small" v-model="configForm.name"></el-input>
@@ -110,7 +111,7 @@
         </el-form>
         <span slot="footer" class="dialog-footer">
           <el-button @click="hideConfig('configForm')" size="mini">取 消</el-button>
-          <el-button type="primary" native-type="submit" @click="submitConfig('configForm')" size="mini">确 定</el-button>
+          <el-button type="primary" native-type="submit" @click="submitConfig('configForm')" size="mini" :loading="valideLoading">确 定</el-button>
         </span>
       </el-dialog>
   </div>
@@ -165,7 +166,8 @@ export default {
             password: [
               { required: true, message: '请输入密码', trigger: 'blur' },
             ],
-          }
+          },
+          valideLoading:false
         }
     },
     computed:{
@@ -192,7 +194,6 @@ export default {
       this.monacoInstance = monaco.editor.create(document.getElementById("monaco"),{
           value:``,
           language:"sql",
-          minimap:false
       });
     },
     methods:{
@@ -222,13 +223,16 @@ export default {
               this.$message.error('配置已存在');
               return;
             }
+            this.valideLoading = true;
             this.$store.dispatch('valideDbConfig',this.configForm).then(res=>{
               this.$store.dispatch('addDbConfig',this.configForm);
               this.$message.success("操作成功");
               this.configForm = {};
               this.configDialogVisible = false;
+              this.valideLoading = false;
             }).catch(err=>{
               console.log(err);
+              this.valideLoading = false;
             })
           } else {
             console.log('error submit!!');
@@ -253,7 +257,7 @@ export default {
         this.monacoInstance.setValue(sql);
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
-          this.tableData = [];
+          this.tableData = [{}];
           setTimeout(() => {
             this.tableData = res.data.rows;
           }, 0);
@@ -269,7 +273,7 @@ export default {
         this.monacoInstance.setValue(sql);
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
-          this.tableData = [];
+          this.tableData = [{}];
           this.fields = [];
           setTimeout(() => {
             this.tableData = res.data.rows;
@@ -355,7 +359,7 @@ export default {
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
           this.tableNames = [];
-          this.tableData = [];
+          this.tableData = [{}];
           this.fields = [];
           setTimeout(() => {
             this.tableNames = rows;
@@ -469,7 +473,7 @@ export default {
         }
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
-          this.tableData = [];
+          this.tableData = [{}];
           this.fields = [];
           setTimeout(() => {
             this.tableData = res.data.rows;

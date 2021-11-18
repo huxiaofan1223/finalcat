@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "author": "“huxiaofan1223” <1476687053@qq.com>",
   "description": "finalcat",
-  "license": null,
+  "license": "huxiaofan1223@github",
   "main": "./dist/electron/main.js",
   "scripts": {
     "build": "node .electron-vue/build.js && electron-builder",
@@ -55,6 +55,7 @@
     "axios": "^0.18.0",
     "element-ui": "^2.15.3",
     "express": "^4.17.1",
+    "monaco-editor": "^0.30.1",
     "mysql": "^2.18.1",
     "vue": "^2.6.14",
     "vue-clipboard2": "^0.3.1",

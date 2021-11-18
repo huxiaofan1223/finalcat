@@ -59,14 +59,18 @@
     border-radius: 50% !important;
   }
   .el-message{
-    border-radius:0 !important;
-    border:1px dashed transparent!important;
+    border-radius:1px !important;
+    border:1px solid transparent!important;
     padding:8px!important;
     min-width:150px!important;
   }
   .el-message__content{
     line-height: 1.3!important;
     font-size:12.5px!important;
+    padding-right:20px!important;
+  }
+  .el-message__closeBtn{
+    right:10px !important;
   }
   .el-input__inner{
     border-radius:1px!important;
@@ -82,24 +86,24 @@
     box-shadow:none!important;
     border:none!important;
   }
-/*定义滚动条高宽及背景 高宽分别对应横竖滚动条的尺寸*/
-::-webkit-scrollbar
-{
-	width: 8px;
-	height: 8px;
-	background-color: #F5F5F5;
-}
- 
-/*定义滚动条轨道 内阴影+圆角*/
-::-webkit-scrollbar-track
-{
-	/* border-radius: 10px; */
-	background-color: white;
-}
-/*定义滑块 内阴影+圆角*/
-::-webkit-scrollbar-thumb
-{
-	border-radius: 4px;
-	background-color: #999999;
-}
+  /*定义滚动条高宽及背景 高宽分别对应横竖滚动条的尺寸*/
+  ::-webkit-scrollbar
+  {
+    width: 8px;
+    height: 8px;
+    background-color: #F5F5F5;
+  }
+  
+  /*定义滚动条轨道 内阴影+圆角*/
+  ::-webkit-scrollbar-track
+  {
+    /* border-radius: 10px; */
+    background-color: white;
+  }
+  /*定义滑块 内阴影+圆角*/
+  ::-webkit-scrollbar-thumb
+  {
+    border-radius: 4px;
+    background-color: #999999;
+  }
 </style>
