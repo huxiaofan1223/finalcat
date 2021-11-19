@@ -86,7 +86,7 @@
         :visible.sync="configDialogVisible"
         width="400px"
         :before-close="hideConfig">
-        <el-form :model="configForm" :rules="rules" ref="configForm" label-width="55px" class="demo-configForm" @submit.native.prevent @keyup.enter.native="submitConfig('configForm')">
+        <el-form :model="configForm" :rules="rules" ref="configForm" label-width="55px" class="demo-configForm" @submit.native.prevent @keypress.enter.native="submitConfig('configForm')">
           <el-form-item label="名称" prop="name">
             <el-input size="small" v-model="configForm.name"></el-input>
           </el-form-item>
@@ -110,7 +110,7 @@
           </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
-          <el-button @click="hideConfig('configForm')" size="mini">取 消</el-button>
+          <el-button @click="hideConfig" size="mini">取 消</el-button>
           <el-button type="primary" native-type="submit" @click="submitConfig('configForm')" size="mini" :loading="valideLoading">确 定</el-button>
         </span>
       </el-dialog>
@@ -143,7 +143,7 @@ export default {
           hasPrimaryKey:false,
           configForm: {
             host: "",
-            port: 3306,
+            port: "",
             user: "",
             password: "",
             database: ""
@@ -211,9 +211,15 @@ export default {
           this.$message.success('操作成功');
         })
       },
-      hideConfig(form){
-        this.$refs[form].resetFields();
-        this.configForm = {};
+      hideConfig(){
+        this.$refs['configForm'].resetFields();
+        this.configFor =  {
+          host: "",
+          port: "",
+          user: "",
+          password: "",
+          database: ""
+        };
         this.configDialogVisible = false;
       },
       submitConfig(formName){
@@ -499,7 +505,7 @@ export default {
           }
         } else if(type==='delete'||type==='update'||type==='insert'||type==='explain'){
           return 0;
-        } else if(type === 'show'||type==='explain'){
+        } else {
           return 0;
         }
         let res = await this.resultSql(countSql);

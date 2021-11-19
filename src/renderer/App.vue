@@ -53,13 +53,13 @@
     justify-content: flex-end;
   }
   .el-button{
-    border-radius:1px !important;
+    border-radius:0 !important;
   }
   .el-button.is-circle{
     border-radius: 50% !important;
   }
   .el-message{
-    border-radius:1px !important;
+    border-radius:0 !important;
     border:1px solid transparent!important;
     padding:8px!important;
     min-width:150px!important;
@@ -82,7 +82,7 @@
     padding-left:15px !important;
   }
   .el-message-box,.el-dialog{
-    border-radius:1px !important;
+    border-radius:0 !important;
     box-shadow:none!important;
     border:none!important;
   }
