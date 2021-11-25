@@ -273,39 +273,32 @@ export default {
           }
         });
       },
+      async pageSelect(sql){
+        this.monacoInstance.setValue(sql);
+        let res = await this.resultSql(sql,true);
+        if(res.data.hasOwnProperty("fields")){
+          this.tableData = [];
+          setTimeout(() => {
+            this.tableData = res.data.rows;
+          }, 0);
+          this.fields = res.data.fields;
+          this.getFieldCommentType();
+        } else {
+          this.$message.success(res.data.rows.message.replace("(",""));
+        }
+      },
       async handleSizeChange(val){
         this.pageConfig.pageSize = val;
         this.pageConfig.pageNum = 1;
         let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
         let sql = this.sql+` limit ${start},${this.pageConfig.pageSize}`;
-        this.monacoInstance.setValue(sql);
-        let res = await this.resultSql(sql,true);
-        if(res.data.hasOwnProperty("fields")){
-          this.tableData = [{}];
-          setTimeout(() => {
-            this.tableData = res.data.rows;
-          }, 0);
-          this.fields = res.data.fields;
-        } else {
-          this.$message.success(res.data.rows.message.replace("(",""));
-        }
+        await this.pageSelect(sql);
       },
       async handleCurrentChange(val){
         this.pageConfig.pageNum = val;
         let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
         let sql = this.sql+` limit ${start},${this.pageConfig.pageSize}`;
-        this.monacoInstance.setValue(sql);
-        let res = await this.resultSql(sql,true);
-        if(res.data.hasOwnProperty("fields")){
-          this.tableData = [{}];
-          this.fields = [];
-          setTimeout(() => {
-            this.tableData = res.data.rows;
-            this.fields = res.data.fields;
-          }, 0);
-        } else {
-          this.$message.success(res.data.rows.message.replace("(",""));
-        }
+        await this.pageSelect(sql);
       },
       clickParent(){
         if(this.rollBackSpan!==null&&$('.choose-child')!==null){
@@ -362,7 +355,6 @@ export default {
         } else {
           this.hasPrimaryKey = false;
         }
-        let rows = await this.getFields(database,table);
         if(this.isLimitSql(sql)){
           this.hasLimit = false;
         } else {
@@ -376,19 +368,7 @@ export default {
             this.hasLimit = false;
           }
         }
-        this.monacoInstance.setValue(sql);
-        let res = await this.resultSql(sql,true);
-        if(res.data.hasOwnProperty("fields")){
-          this.tableData = [{}];
-          this.fields = [];
-          setTimeout(() => {
-            this.tableData = res.data.rows;
-            this.fields = res.data.fields;
-            this.getFieldCommentType();
-          }, 0);
-        } else {
-          this.$message.success(res.data.rows.message.replace("(",""));
-        }
+        await this.pageSelect(sql);
       },
       async removeRow(row){
         this.$confirm('是否删除此列？', '提示', {
@@ -490,18 +470,7 @@ export default {
             this.hasLimit = false;
           }
         }
-        let res = await this.resultSql(sql,true);
-        if(res.data.hasOwnProperty("fields")){
-          this.tableData = [{}];
-          this.fields = [];
-          setTimeout(() => {
-            this.tableData = res.data.rows;
-            this.fields = res.data.fields;
-            this.getFieldCommentType();
-          }, 0);
-        } else {
-          this.$message.success(res.data.rows.message.replace("(",""));
-        }
+        await this.pageSelect(sql);
       },
       async getTableCount(sql){
         let type = sql.split(" ")[0].toLowerCase();
