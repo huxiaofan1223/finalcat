@@ -39,7 +39,7 @@
   }
   .between{
     display: flex;
-    justify-content: space-between
+    justify-content: space-between;
   }
   .expand{
     display: flex;

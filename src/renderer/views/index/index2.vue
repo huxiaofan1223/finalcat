@@ -1,8 +1,8 @@
 <template>
-  <div class="main" @click="clickParent">
+  <div class="main" @click="parentClick">
       <div class="app-left">
         <div class="justify-center" style="margin:10px 0;">
-          <el-button size="mini" type="primary" @click="showConfigDialog">新增数据库</el-button>
+          <el-button size="mini" type="primary" @click="addConfig">新增数据库</el-button>
         </div>
       <div class="justify-center" style="padding:100px 0;" v-if="$store.state.Db.dbList.length===0">
         暂无数据库
@@ -39,22 +39,30 @@
           <el-button type="primary" size="small" @click="sendSql">执行</el-button>
         </div>
         <el-table :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border>
-          <template>
-            <el-table-column label="DEL" width="50px" v-if="tableData.length!==0&&canDelete">
+          <template v-if="canDelete">
+            <el-table-column label="DEL" width="50px">
               <template slot-scope="scope">
                 <div style="display:inline-flex;padding:0 10px;">
                   <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column :min-width="`${item.name} ${item.COLUMN_TYPE}`.length*8" v-for="(item,index) in fields" :key="index" :label="`${item.name} ${item.COLUMN_TYPE} ${item.COLUMN_COMMENT}`">
+            <el-table-column :min-width="`${item.COLUMN_NAME} ${item.COLUMN_TYPE}`.length*8" v-for="(item,index) in tableNames" :key="index" :label="`${item.COLUMN_NAME} ${item.COLUMN_TYPE} ${item.COLUMN_COMMENT}`">
               <template slot="header">
-                {{item.name}}
+                {{item.COLUMN_NAME}}
                 <font color="#555555">{{item.COLUMN_TYPE}}</font>
                 <p style="font-size:12px;color:red;line-height:14px;">{{item.COLUMN_COMMENT}}</p>
               </template>
               <template slot-scope="scope">
-                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="true" @click.stop="clickRow" @keypress.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
+                  <div class="table-child single-row" :title="scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]" :style="{'color':scope.row[item.COLUMN_NAME]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keypress.enter.prevent="(e)=>updateRow(e.target,item.COLUMN_NAME,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.COLUMN_NAME]===null?'NULL':scope.row[item.COLUMN_NAME]}}</div>
+              </template>
+            </el-table-column>
+          </template>
+
+          <template v-else>
+            <el-table-column :min-width="`150px`" v-for="(item,index) in fields" :key="index" :label="item.name">
+              <template slot-scope="scope">
+                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="notRow" @keypress.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
               </template>
             </el-table-column>
           </template>
@@ -77,7 +85,7 @@
         title="添加配置"
         :visible.sync="configDialogVisible"
         width="400px"
-        :before-close="hideConfigDialog">
+        :before-close="hideConfig">
         <el-form :model="configForm" :rules="rules" ref="configForm" label-width="55px" class="demo-configForm" @submit.native.prevent @keypress.enter.native="submitConfig('configForm')">
           <el-form-item label="名称" prop="name">
             <el-input size="small" v-model="configForm.name"></el-input>
@@ -102,7 +110,7 @@
           </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
-          <el-button @click="hideConfigDialog" size="mini">取 消</el-button>
+          <el-button @click="hideConfig" size="mini">取 消</el-button>
           <el-button type="primary" native-type="submit" @click="submitConfig('configForm')" size="mini" :loading="valideLoading">确 定</el-button>
         </span>
       </el-dialog>
@@ -112,6 +120,7 @@
 <script>
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
+import fieldsTypes from '../../utils/types'
 export default {
     data(){
         return {
@@ -123,6 +132,7 @@ export default {
           fields:[],
           loading:false,
           rollBackSpan:null,
+          tableNames:[],
           pageConfig:{
             pageNum:1,
             pageSize:20,
@@ -187,44 +197,7 @@ export default {
       });
     },
     methods:{
-      async getFields(db,table){
-        let sql = `select * from information_schema.COLUMNS where table_name = '${table}' and table_schema = '${db}';`;
-        let res = await this.resultSql(sql);
-        try{
-          return res.data.rows;
-        }catch(err){
-          console.log('getFields error',err);
-        }
-      },
-      async getFieldCommentType(){
-        let obj = {};
-        for(let field of this.fields){
-          let key = `${field.db}.${field.table}`;
-          if(!obj.hasOwnProperty(key)){
-            let t = await this.getFields(field.db,field.table);
-            obj[key] = t;
-          }
-        }
-        this.filterToField(obj);
-      },
-      filterToField(obj){
-        for(let t in obj){
-          for(let rowItem of obj[t]){
-              this.fields.forEach(field=>{
-                if(field.name === rowItem.COLUMN_NAME && field.db === rowItem.TABLE_SCHEMA && field.table === rowItem.TABLE_NAME){
-                  this.$set(field,'COLUMN_COMMENT',rowItem.COLUMN_COMMENT);
-                  this.$set(field,'COLUMN_TYPE',rowItem.COLUMN_TYPE);
-                }
-              })
-          }
-        }
-        let newFields = JSON.parse(JSON.stringify(this.fields));
-        this.fields = [];
-        setTimeout(() => {
-          this.fields = newFields;
-        }, 0);
-      },
-      showConfigDialog(){
+      addConfig(){
         this.configDialogVisible = true;
         this.configForm.port = 3306;
       },
@@ -238,7 +211,7 @@ export default {
           this.$message.success('操作成功');
         })
       },
-      hideConfigDialog(){
+      hideConfig(){
         this.$refs['configForm'].resetFields();
         this.configForm =  {
           host: "",
@@ -272,6 +245,15 @@ export default {
             return false;
           }
         });
+      },
+      isConfigExist(config){
+        let temp = JSON.parse(JSON.stringify(config));
+        delete temp.name;
+        return this.$store.state.Db.dbList.map(item=>{
+          let tempItem = JSON.parse(JSON.stringify(item));
+          delete tempItem.name;
+          return JSON.stringify(tempItem);
+        }).indexOf(JSON.stringify(temp)) !== -1;
       },
       async handleSizeChange(val){
         this.pageConfig.pageSize = val;
@@ -307,7 +289,7 @@ export default {
           this.$message.success(res.data.rows.message.replace("(",""));
         }
       },
-      clickParent(){
+      parentClick(e){
         if(this.rollBackSpan!==null&&$('.choose-child')!==null){
           $('.choose-child').innerHTML = this.rollBackSpan;
           this.rollBackSpan = null;
@@ -325,7 +307,7 @@ export default {
           }
         }
       },
-      clickRow(e){
+      notRow(e){
         if(this.rollBackSpan!==null && $('.choose-child') && e.target.className.indexOf('choose-child') === -1&&$('.choose-child').innerHTML!==this.rollBackSpan){
           $('.choose-child').innerHTML = this.rollBackSpan;
           this.rollBackSpan = null;
@@ -341,6 +323,9 @@ export default {
           e.target.classList.add('choose-child');
           e.target.classList.remove('single-row');
         }, 0);
+      },
+      getType(type){
+        return fieldsTypes[type].toLowerCase();
       },
       getDbTree(options){
         this.chooseOptions = JSON.parse(JSON.stringify(options));
@@ -379,12 +364,13 @@ export default {
         this.monacoInstance.setValue(sql);
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
+          this.tableNames = [];
           this.tableData = [{}];
           this.fields = [];
           setTimeout(() => {
+            this.tableNames = rows;
             this.tableData = res.data.rows;
             this.fields = res.data.fields;
-            this.getFieldCommentType();
           }, 0);
         } else {
           this.$message.success(res.data.rows.message.replace("(",""));
@@ -415,6 +401,7 @@ export default {
         try{
           let primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
           value = value.replace(/\"(.*)\"/,(all,mat)=>{return `'${mat}'`});
+
           let sql = `update ${this.nowDatabase}.${this.nowTable} set ${key} = ${value} where ${primaryKey} = ${row[primaryKey]}`;
           let updateRes = await this.resultSql(sql);
           if(!updateRes.data.hasOwnProperty("fields")){
@@ -497,10 +484,18 @@ export default {
           setTimeout(() => {
             this.tableData = res.data.rows;
             this.fields = res.data.fields;
-            this.getFieldCommentType();
           }, 0);
         } else {
           this.$message.success(res.data.rows.message.replace("(",""));
+        }
+      },
+      async getFields(db,table){
+        let sql = `select * from information_schema.COLUMNS where table_name = '${table}' and table_schema = '${db}';`;
+        let res = await this.resultSql(sql);
+        try{
+          return res.data.rows;
+        }catch(err){
+          console.log('getFields error',err);
         }
       },
       async getTableCount(sql){
@@ -525,15 +520,6 @@ export default {
       },
       isCountSql(sql){
         return /^select count\(.*?\)((?!,).)*? from/i.test(sql);
-      },
-      isConfigExist(config){
-        let temp = JSON.parse(JSON.stringify(config));
-        delete temp.name;
-        return this.$store.state.Db.dbList.map(item=>{
-          let tempItem = JSON.parse(JSON.stringify(item));
-          delete tempItem.name;
-          return JSON.stringify(tempItem);
-        }).indexOf(JSON.stringify(temp)) !== -1;
       }
     }
 }
