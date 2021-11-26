@@ -47,7 +47,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column :min-width="`${item.name} ${item.COLUMN_TYPE}`.length*8" v-for="(item,index) in fields" :key="index" :label="`${item.name} ${item.COLUMN_TYPE} ${item.COLUMN_COMMENT}`">
+            <el-table-column :min-width="`${item.name} ${item.COLUMN_TYPE}`.length*8" v-for="item in fields" :key="`${item.db}-${item.table}-${item.name}`">
               <template slot="header">
                 {{item.name}}
                 <font color="#555555">{{item.COLUMN_TYPE}}</font>
@@ -106,6 +106,8 @@
           <el-button type="primary" native-type="submit" @click="submitConfig('configForm')" size="mini" :loading="valideLoading">确 定</el-button>
         </span>
       </el-dialog>
+
+      <!-- {{JSON.stringify(this.fields)}} -->
   </div>
 </template>
 
@@ -179,6 +181,9 @@ export default {
             return arr;
           }
         }
+        // setInterval(() => {
+        //   console.log(JSON.stringify(this.fields));
+        // }, 1000);
     },
     mounted(){
       this.monacoInstance = monaco.editor.create(document.getElementById("monaco"),{
@@ -211,6 +216,7 @@ export default {
         for(let t in obj){
           for(let rowItem of obj[t]){
               this.fields.forEach(field=>{
+                console.log("foreach");
                 if(field.name === rowItem.COLUMN_NAME && field.db === rowItem.TABLE_SCHEMA && field.table === rowItem.TABLE_NAME){
                   this.$set(field,'COLUMN_COMMENT',rowItem.COLUMN_COMMENT);
                   this.$set(field,'COLUMN_TYPE',rowItem.COLUMN_TYPE);
@@ -218,11 +224,11 @@ export default {
               })
           }
         }
-        let newFields = JSON.parse(JSON.stringify(this.fields));
-        this.fields = [];
-        setTimeout(() => {
-          this.fields = newFields;
-        }, 0);
+        // this.fields = JSON.parse(JSON.stringify(this.fields));
+        // setInterval(() => {
+        //   console.log(this.fields);
+        //   this.$forceUpdate();
+        // }, 1000);
       },
       showConfigDialog(){
         this.configDialogVisible = true;
