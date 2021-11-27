@@ -2,7 +2,7 @@
   <div class="main" @click="clickParent">
       <div class="app-left">
         <div class="justify-center" style="margin:10px 0;">
-          <el-button size="mini" type="primary" @click="showConfigDialog">新增数据库</el-button>
+          <el-button size="mini" type="primary" @click.stop="showConfigDialog">新增数据库</el-button>
         </div>
       <div class="justify-center" style="padding:100px 0;" v-if="$store.state.Db.dbList.length===0">
         暂无数据库
@@ -47,11 +47,11 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column :min-width="`${item.name} ${item.COLUMN_TYPE}`.length*8" v-for="item in fields" :key="`${item.db}-${item.table}-${item.name}`">
-              <template slot="header">
-                {{item.name}}
-                <font color="#555555">{{item.COLUMN_TYPE}}</font>
-                <p style="font-size:12px;color:red;line-height:14px;">{{item.COLUMN_COMMENT}}</p>
+            <el-table-column :min-width="`${item.name} ${item.COLUMN_TYPE}`.length*8" v-for="(item,index) in fields" :key="`${item.db}-${item.table}-${item.name}`">
+              <template #header>
+                {{fields[index].name}}
+                <font color="#555555">{{fields[index].COLUMN_TYPE}}</font>
+                <p style="font-size:12px;color:red;line-height:14px;">{{fields[index].COLUMN_COMMENT}}</p>
               </template>
               <template slot-scope="scope">
                   <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="true" @click.stop="clickRow" @keypress.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
@@ -216,7 +216,6 @@ export default {
         for(let t in obj){
           for(let rowItem of obj[t]){
               this.fields.forEach(field=>{
-                console.log("foreach");
                 if(field.name === rowItem.COLUMN_NAME && field.db === rowItem.TABLE_SCHEMA && field.table === rowItem.TABLE_NAME){
                   this.$set(field,'COLUMN_COMMENT',rowItem.COLUMN_COMMENT);
                   this.$set(field,'COLUMN_TYPE',rowItem.COLUMN_TYPE);
@@ -224,11 +223,7 @@ export default {
               })
           }
         }
-        // this.fields = JSON.parse(JSON.stringify(this.fields));
-        // setInterval(() => {
-        //   console.log(this.fields);
-        //   this.$forceUpdate();
-        // }, 1000);
+        console.log(this.fields);
       },
       showConfigDialog(){
         this.configDialogVisible = true;
@@ -283,12 +278,10 @@ export default {
         this.monacoInstance.setValue(sql);
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
-          this.tableData = [];
-          setTimeout(() => {
-            this.tableData = res.data.rows;
-          }, 0);
+          this.tableData = res.data.rows;
           this.fields = res.data.fields;
-          this.getFieldCommentType();
+          this.$forceUpdate();
+          await this.getFieldCommentType();
         } else {
           this.$message.success(res.data.rows.message.replace("(",""));
         }
