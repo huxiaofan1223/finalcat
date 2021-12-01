@@ -37,7 +37,7 @@
           </div>
           <el-button type="primary" size="small" @click="sendSql">执行</el-button>
         </div>
-        <el-table :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border>
+        <el-table ref="table" :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border>
           <template>
             <el-table-column label="DEL" width="50px" v-if="tableData.length!==0&&canDelete">
               <template slot-scope="scope">
@@ -238,6 +238,7 @@ export default {
           }
         }
         this.$forceUpdate();
+        this.$refs.table.$forceUpdate();
       },
       showConfigDialog(){
         this.configDialogVisible = true;
@@ -320,7 +321,6 @@ export default {
         await this.pageSelect(sql);
       },
       clickParent(){
-        alert('点击了');
         if(this.rollBackSpan!==null&&$('.choose-child')!==null){
           $('.choose-child').innerHTML = this.rollBackSpan;
           this.rollBackSpan = null;
@@ -356,6 +356,7 @@ export default {
         }, 0);
       },
       getDbTree(options){
+        this.removeChooseClass();
         this.chooseOptions = JSON.parse(JSON.stringify(options));
         let data = options;
         this.$http.post('/dbtree',data).then(res=>{
@@ -369,6 +370,14 @@ export default {
         let sql = `select * from ${this.nowTable}`;
         const limitSql = await this.preFixLimitSql(sql);
         await this.pageSelect(limitSql);
+      },
+      removeChooseClass(){
+        this.rollBackSpan = null;
+        let ss = $('.table-child') || [];
+        for(let item of ss){
+          item.classList.remove('choose-child');
+          item.classList.add('single-row');
+        }
       },
       async removeRow(row){
         this.$confirm('是否删除此列？', '提示', {
