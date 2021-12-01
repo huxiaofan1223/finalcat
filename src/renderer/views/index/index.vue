@@ -12,13 +12,12 @@
           default-active="1"
           class="el-menu-vertical-demo"
           :unique-opened="true">
-          <el-submenu v-for="(db,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.native="(e)=>{getDbTree(db)}">
+          <el-submenu v-for="(db,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.stop.native="(e)=>{getDbTree(db)}">
             <template slot="title">
               <i @click.stop="deleteConfig(db)" class="el-icon-delete" style="font-size:13px;color:red;width:20px;margin-right:0;"></i><span>{{db.name}} <font color="#999999" size="2">{{db.host}}:{{db.port}}</font></span>
             </template>
             <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
-                <!-- <i class="el-icon-setting" style="font-size:13px;"></i> -->
                 <span>{{item.Database}}</span>
               </template>
               <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">{{item2}}</el-menu-item>
@@ -54,7 +53,7 @@
                 <p style="font-size:12px;color:red;line-height:14px;">{{fields[index].COLUMN_COMMENT}}</p>
               </template>
               <template slot-scope="scope">
-                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="true" @click.stop="clickRow" @keypress.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
+                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="clickRow" @keypress.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
               </template>
             </el-table-column>
           </template>
@@ -159,16 +158,9 @@ export default {
               { required: true, message: '请输入密码', trigger: 'blur' },
             ],
           },
-          valideLoading:false
+          valideLoading:false,
+          canDelete:false
         }
-    },
-    computed:{
-      canDelete(){
-        let tableArr = Array.from(new Set(this.fields.map(item=>item.table)));
-        let dbArr = Array.from(new Set(this.fields.map(item=>item.db)));
-        let flag = this.fields.length!==0 && this.fields[0].db!=="" && this.fields[0].table!==0 && dbArr.length === 1&& tableArr.length === 1;
-        return flag && this.hasPrimaryKey;
-      }
     },
     created(){
         window.$ = function(a){
@@ -181,9 +173,6 @@ export default {
             return arr;
           }
         }
-        // setInterval(() => {
-        //   console.log(JSON.stringify(this.fields));
-        // }, 1000);
     },
     mounted(){
       this.monacoInstance = monaco.editor.create(document.getElementById("monaco"),{
@@ -192,6 +181,30 @@ export default {
       });
     },
     methods:{
+      equalsObj(obj1,obj2){
+        return JSON.stringify(obj1) === JSON.stringify(obj2);
+      },
+      async updateCanDelete(){
+        let tableArr = Array.from(new Set(this.fields.map(item=>item.table)));
+        let dbArr = Array.from(new Set(this.fields.map(item=>item.db)));
+        let flag = this.fields.length !== 0 && this.fields[0].db !== "" && this.fields[0].table!=="" && dbArr.length === 1 && tableArr.length === 1;
+        if(flag){
+          if(this.nowDatabase !== dbArr[0] || this.nowTable === tableArr[0]){
+            this.nowDatabase = dbArr[0];
+            this.nowTable = tableArr[0];
+            await this.updateHasPrimaryKey();
+          }
+        }
+        this.canDelete = flag && this.hasPrimaryKey;
+      },
+      async updateHasPrimaryKey(){
+        const primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
+        if(primaryKey!== null) {
+          this.hasPrimaryKey = true;
+        } else {
+          this.hasPrimaryKey = false;
+        }
+      },
       async getFields(db,table){
         let sql = `select * from information_schema.COLUMNS where table_name = '${table}' and table_schema = '${db}';`;
         let res = await this.resultSql(sql);
@@ -202,6 +215,7 @@ export default {
         }
       },
       async getFieldCommentType(){
+        await this.updateCanDelete();
         let obj = {};
         for(let field of this.fields){
           let key = `${field.db}.${field.table}`;
@@ -210,9 +224,9 @@ export default {
             obj[key] = t;
           }
         }
-        this.filterToField(obj);
+        this.filterDetail2Field(obj);
       },
-      filterToField(obj){
+      filterDetail2Field(obj){
         for(let t in obj){
           for(let rowItem of obj[t]){
               this.fields.forEach(field=>{
@@ -223,7 +237,7 @@ export default {
               })
           }
         }
-        console.log(this.fields);
+        this.$forceUpdate();
       },
       showConfigDialog(){
         this.configDialogVisible = true;
@@ -279,8 +293,14 @@ export default {
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
           this.tableData = res.data.rows;
-          this.fields = res.data.fields;
-          this.$forceUpdate();
+          let equalFieldsArr = JSON.parse(JSON.stringify(this.fields));
+          equalFieldsArr.forEach(item=>{
+            delete item.COLUMN_COMMENT;
+            delete item.COLUMN_TYPE;
+          })
+          if(!this.equalsObj(equalFieldsArr,res.data.fields)){
+            this.fields = res.data.fields;
+          }
           await this.getFieldCommentType();
         } else {
           this.$message.success(res.data.rows.message.replace("(",""));
@@ -300,6 +320,7 @@ export default {
         await this.pageSelect(sql);
       },
       clickParent(){
+        alert('点击了');
         if(this.rollBackSpan!==null&&$('.choose-child')!==null){
           $('.choose-child').innerHTML = this.rollBackSpan;
           this.rollBackSpan = null;
@@ -343,31 +364,11 @@ export default {
       },
       async chooseTable(database,table){
         this.loading = true;
-        this.pageConfig.pageNum = 1;
         this.nowTable = table;
         this.nowDatabase = database;
         let sql = `select * from ${this.nowTable}`;
-        this.sql = JSON.parse(JSON.stringify(sql));
-        const primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
-        if(primaryKey!== null) {
-          this.hasPrimaryKey = true;
-        } else {
-          this.hasPrimaryKey = false;
-        }
-        if(this.isLimitSql(sql)){
-          this.hasLimit = false;
-        } else {
-          let total = await this.getTableCount(sql);
-          this.pageConfig.total = total;
-          if(this.pageConfig.pageNum<total){
-              let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
-              sql = sql +` limit ${start},${this.pageConfig.pageSize}`;
-              this.hasLimit = true;
-          } else {
-            this.hasLimit = false;
-          }
-        }
-        await this.pageSelect(sql);
+        const limitSql = await this.preFixLimitSql(sql);
+        await this.pageSelect(limitSql);
       },
       async removeRow(row){
         this.$confirm('是否删除此列？', '提示', {
@@ -384,9 +385,10 @@ export default {
               let index = this.tableData.map(item=>item[primaryKey]).indexOf(row[primaryKey]);
               this.tableData.splice(index,1);
             }
+            this.pageConfig.total = this.pageConfig.total-1;
           }
           catch(err){
-            console.log("remove_error");
+            console.log("remove_error",err);
           }
         }).catch(() => {});
       },
@@ -452,24 +454,27 @@ export default {
           return;
         }
         this.loading = true;
+        const limitSql = await this.preFixLimitSql(sql);
+        await this.pageSelect(limitSql);
+      },
+      async preFixLimitSql(sql){
         this.pageConfig.pageNum = 1;
         this.pageConfig.total = 0;
+        this.sql = JSON.parse(JSON.stringify(sql));
         if(this.isLimitSql(sql)){
           this.hasLimit = false;
         } else {
-          this.sql = JSON.parse(JSON.stringify(sql));
           let total = await this.getTableCount(sql);
           this.pageConfig.total = total;
-          if(this.pageConfig.pageNum<total){
+          if(this.pageConfig.pageSize<total){
               let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
               sql = sql +` limit ${start},${this.pageConfig.pageSize}`;
-              this.monacoInstance.setValue(sql);
               this.hasLimit = true;
           } else {
             this.hasLimit = false;
           }
         }
-        await this.pageSelect(sql);
+        return sql;
       },
       async getTableCount(sql){
         let type = sql.split(" ")[0].toLowerCase();
