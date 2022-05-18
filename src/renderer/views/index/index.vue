@@ -14,13 +14,26 @@
           :unique-opened="true">
           <el-submenu v-for="(db,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.stop.native="(e)=>{getDbTree(db)}">
             <template slot="title">
-              <i @click.stop="deleteConfig(db)" class="el-icon-delete" style="font-size:13px;color:red;width:20px;margin-right:0;"></i><span>{{db.name}} <font color="#999999" size="2">{{db.host}}:{{db.port}}</font></span>
+              <span style="margin-left:-15px;">
+                <i @click.stop="handleDelConfig(db)" class="el-icon-delete" style="font-size:13px;color:red;width:20px;margin-right:0;"></i>{{db.name}} 
+                <font color="#999999" size="2">
+                  {{db.host}}:{{db.port}}
+                </font>
+              </span>
             </template>
             <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
-                <span>{{item.Database}}</span>
+                <span style="margin-left:-30px;">
+                  <img src="../../assets/database.png" width="12px">
+                  {{item.Database}}
+                </span>
               </template>
-              <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">{{item2}}</el-menu-item>
+              <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">
+                <span style="margin-left:-40px;">
+                  <img src="../../assets/table.png" width="12px">
+                  {{item2}}
+                </span>
+              </el-menu-item>
             </el-submenu>
           </el-submenu>
         </el-menu>
@@ -33,13 +46,14 @@
           <div>
             <span style="margin-right:20px;">当前连接地址：<font color="blue">{{chooseOptions.host===undefined?'无':chooseOptions.host}}</font></span>
             <span style="margin-right:20px;">当前连接数据库：<font color="blue">{{nowDatabase===''?'无':nowDatabase}}</font></span>
+            <span style="margin-right:20px;">table：<font color="blue">{{nowTable===''?'无':nowTable}}</font></span>
             <span>共<font color="blue">{{this.tableData.length}}</font>条数据</span>
           </div>
           <el-button type="primary" size="small" @click="sendSql">执行</el-button>
         </div>
         <el-table ref="table" :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border>
           <template>
-            <el-table-column label="DEL" width="50px" v-if="tableData.length!==0&&canDelete">
+            <el-table-column label="操作" width="50px" v-if="tableData.length!==0&&canDelete">
               <template slot-scope="scope">
                 <div style="display:inline-flex;padding:0 10px;">
                   <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
@@ -189,13 +203,14 @@ export default {
         let dbArr = Array.from(new Set(this.fields.map(item=>item.db)));
         let flag = this.fields.length !== 0 && this.fields[0].db !== "" && this.fields[0].table!=="" && dbArr.length === 1 && tableArr.length === 1;
         if(flag){
-          if(this.nowDatabase !== dbArr[0] || this.nowTable === tableArr[0]){
+          if(this.nowDatabase !== dbArr[0] || this.nowTable !== tableArr[0]){
             this.nowDatabase = dbArr[0];
             this.nowTable = tableArr[0];
-            await this.updateHasPrimaryKey();
+            
           }
         }
-        this.canDelete = flag && this.hasPrimaryKey;
+        const hasPrimaryKey = await this.updateHasPrimaryKey();
+        this.canDelete = flag && hasPrimaryKey;
       },
       async updateHasPrimaryKey(){
         const primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
@@ -244,7 +259,7 @@ export default {
         this.configDialogVisible = true;
         this.configForm.port = 3306;
       },
-      deleteConfig(config){
+      handleDelConfig(config){
         this.$confirm('是否删除此连接？', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
@@ -293,7 +308,10 @@ export default {
         this.monacoInstance.setValue(sql);
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
-          this.tableData = res.data.rows;
+          this.tableData = [];
+          setTimeout(()=>{
+            this.tableData = res.data.rows;
+          },0)
           let equalFieldsArr = JSON.parse(JSON.stringify(this.fields));
           equalFieldsArr.forEach(item=>{
             delete item.COLUMN_COMMENT;
@@ -532,11 +550,11 @@ export default {
     width:260px;
     overflow: auto;
     overflow-x:hidden;
-    /deep/.el-menu-item{
+    ::v-deep.el-menu-item{
       height:30px;
       line-height: 30px;
     }
-    /deep/.el-submenu__title{
+    ::v-deep.el-submenu__title{
       height:30px;
       line-height: 30px;
     }
@@ -571,29 +589,29 @@ export default {
     .choose-child:focus{
       border: 1px dashed #777777;
     }
-    /deep/.el-table td .cell{
+    ::v-deep.el-table td .cell{
       padding-left:0;
       padding-right:0;
       line-height:18px;
     }
-    /deep/.el-table th .cell{
+    ::v-deep.el-table th .cell{
       padding-left:0;
       padding-right:0;
       line-height:18px;
     }
-    /deep/ .el-table__body{
+    ::v-deep .el-table__body{
       padding-bottom:15px;
     }
-    /deep/.el-table td{
+    ::v-deep.el-table td{
       padding: 0!important;
     }
-    /deep/.el-table th{
+    ::v-deep.el-table th{
       padding: 0!important;
     }
-    /deep/.el-table::before{
+    ::v-deep.el-table::before{
       height:0;
     }
-    /deep/.el-table th>.cell{
+    ::v-deep.el-table th>.cell{
       padding:8px 5px;
       font-weight: normal;
       color:#222222;
