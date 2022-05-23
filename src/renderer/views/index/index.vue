@@ -30,7 +30,7 @@
               </template>
               <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">
                 <span style="margin-left:-40px;">
-                  <img src="../../assets/table.png" width="12px">
+                  <img src="../../assets/table.png" width="10px">
                   {{item2}}
                 </span>
               </el-menu-item>
@@ -44,10 +44,10 @@
         </div>
         <div class="padding10 between items-center">
           <div>
-            <span style="margin-right:20px;">当前连接地址：<font color="blue">{{chooseOptions.host===undefined?'无':chooseOptions.host}}</font></span>
-            <span style="margin-right:20px;">当前连接数据库：<font color="blue">{{nowDatabase===''?'无':nowDatabase}}</font></span>
-            <span style="margin-right:20px;">table：<font color="blue">{{nowTable===''?'无':nowTable}}</font></span>
-            <span>共<font color="blue">{{this.tableData.length}}</font>条数据</span>
+            <span style="margin-right:20px;">当前连接地址：<font color="#66b1ff">{{chooseOptions.host===undefined?'无':chooseOptions.host}}</font></span>
+            <span style="margin-right:20px;">当前连接数据库：<font color="#66b1ff">{{nowDatabase===''?'无':nowDatabase}}</font></span>
+            <span style="margin-right:20px;">table：<font color="#66b1ff">{{nowTable===''?'无':nowTable}}</font></span>
+            <span>共<font color="#66b1ff">{{this.tableData.length}}</font>条数据</span>
           </div>
           <el-button type="primary" size="small" @click="sendSql">执行</el-button>
         </div>
@@ -73,8 +73,10 @@
           </template>
         </el-table>
 
-        <div class="between" style="padding:10px;" v-if="hasLimit">
-          <div></div>
+        <div class="between" style="padding:10px;">
+          <div>
+            <el-button type="primary" size="small" @click="handleInsert">新增</el-button>
+          </div>
           <el-pagination
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
@@ -195,6 +197,46 @@ export default {
       });
     },
     methods:{
+      type2value(dataType){
+        if(dataType.indexOf('int')>-1){
+          return 0;
+        } else {
+          return ''
+        }
+      },
+      async handleInsert(){
+        let pri = null;
+        const valueArr = this.fields.map(item=>{
+          if(item.COLUMN_DEFAULT === null){
+            if(item.IS_NULLABLE === 'YES'){
+              return null;
+            } else {
+              if(item.COLUMN_KEY === 'PRI'){
+                pri = item.COLUMN_NAME;
+                return null;
+              }
+              return this.type2value(item.DATA_TYPE);
+            }
+          }
+          return item.COLUMN_DEFAULT;
+        })
+        const valuesStr = JSON.stringify(valueArr);
+        const length1 = valuesStr.length-1;
+        const {nowDatabase,nowTable} = this;
+        const values = valuesStr.substring(1,length1);
+        const sql = `INSERT INTO ${nowDatabase}.${nowTable} VALUES (${values})`;
+        const addRes = await this.resultSql(sql,true);
+        this.$message.success('affectedRows Count:'+addRes.data.rows.affectedRows);
+        const newObj = {};
+        this.fields.forEach((item,index)=>{
+          newObj[item.COLUMN_NAME] = valueArr[index];
+        })
+        if(pri){newObj[pri] = addRes.data.rows.insertId};
+        if(addRes.data.rows.affectedRows === 1){
+          this.tableData.push(newObj);
+        }
+        this.pageConfig.total = this.pageConfig.total+1;
+      },
       equalsObj(obj1,obj2){
         return JSON.stringify(obj1) === JSON.stringify(obj2);
       },
@@ -206,11 +248,10 @@ export default {
           if(this.nowDatabase !== dbArr[0] || this.nowTable !== tableArr[0]){
             this.nowDatabase = dbArr[0];
             this.nowTable = tableArr[0];
-            
           }
         }
-        const hasPrimaryKey = await this.updateHasPrimaryKey();
-        this.canDelete = flag && hasPrimaryKey;
+        await this.updateHasPrimaryKey();
+        this.canDelete = flag && this.hasPrimaryKey;
       },
       async updateHasPrimaryKey(){
         const primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
@@ -242,18 +283,19 @@ export default {
         this.filterDetail2Field(obj);
       },
       filterDetail2Field(obj){
+        const arr = [];
         for(let t in obj){
           for(let rowItem of obj[t]){
               this.fields.forEach(field=>{
                 if(field.name === rowItem.COLUMN_NAME && field.db === rowItem.TABLE_SCHEMA && field.table === rowItem.TABLE_NAME){
-                  this.$set(field,'COLUMN_COMMENT',rowItem.COLUMN_COMMENT);
-                  this.$set(field,'COLUMN_TYPE',rowItem.COLUMN_TYPE);
+                  const newField = {...field,...rowItem};
+                  arr.push(newField)
                 }
               })
           }
         }
+        this.fields = arr;
         this.$forceUpdate();
-        this.$refs.table.$forceUpdate();
       },
       showConfigDialog(){
         this.configDialogVisible = true;
