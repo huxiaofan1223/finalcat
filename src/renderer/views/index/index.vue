@@ -49,7 +49,7 @@
             <span style="margin-right:20px;">table：<font color="#66b1ff">{{nowTable===''?'无':nowTable}}</font></span>
             <span>共<font color="#66b1ff">{{this.tableData.length}}</font>条数据</span>
           </div>
-          <el-button type="primary" size="small" @click="sendSql">执行</el-button>
+          <el-button type="primary" size="small" @click="handleSubmit">执行</el-button>
         </div>
         <el-table ref="table" :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border>
           <template>
@@ -243,17 +243,21 @@ export default {
         let tableArr = Array.from(new Set(this.fields.map(item=>item.table)));
         let dbArr = Array.from(new Set(this.fields.map(item=>item.db)));
         let flag = this.fields.length !== 0 && this.fields[0].db !== "" && this.fields[0].table!=="" && dbArr.length === 1 && tableArr.length === 1;
+        console.log('only one table bool',flag);
         if(flag){
           if(this.nowDatabase !== dbArr[0] || this.nowTable !== tableArr[0]){
             this.nowDatabase = dbArr[0];
             this.nowTable = tableArr[0];
           }
         }
+        console.log(dbArr);
+        console.log(tableArr);
         await this.updateHasPrimaryKey();
         this.canDelete = flag && this.hasPrimaryKey;
       },
       async updateHasPrimaryKey(){
         const primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
+        console.log('updateHasPrimaryKey',primaryKey);
         if(primaryKey!== null) {
           this.hasPrimaryKey = true;
         } else {
@@ -279,21 +283,25 @@ export default {
             obj[key] = t;
           }
         }
+        console.log(obj);
         this.filterDetail2Field(obj);
       },
+      deepClone(a){
+        return JSON.parse(JSON.stringify(a));
+      },
       filterDetail2Field(obj){
-        const arr = [];
+        const arr = this.deepClone(this.fields);
         for(let t in obj){
           for(let rowItem of obj[t]){
-              this.fields.forEach(field=>{
+              arr.forEach((field,index)=>{
                 if(field.name === rowItem.COLUMN_NAME && field.db === rowItem.TABLE_SCHEMA && field.table === rowItem.TABLE_NAME){
-                  const newField = {...field,...rowItem};
-                  arr.push(newField)
+                  arr[index] = {...field,...rowItem};
                 }
               })
           }
         }
         this.fields = arr;
+        console.log('fields',this.fields);
         this.$forceUpdate();
       },
       showConfigDialog(){
@@ -349,11 +357,12 @@ export default {
         this.monacoInstance.setValue(sql);
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
+          console.log(res.data.rows);
           this.tableData = [];
           setTimeout(()=>{
             this.tableData = res.data.rows;
           },0)
-          let equalFieldsArr = JSON.parse(JSON.stringify(this.fields));
+          let equalFieldsArr = this.deepClone(this.fields);
           equalFieldsArr.forEach(item=>{
             delete item.COLUMN_COMMENT;
             delete item.COLUMN_TYPE;
@@ -402,7 +411,7 @@ export default {
           $('.choose-child').innerHTML = this.rollBackSpan;
           this.rollBackSpan = null;
         } else {
-          this.rollBackSpan = JSON.parse(JSON.stringify(e.target.innerHTML));
+          this.rollBackSpan = e.target.innerHTML;
         }
         setTimeout(() => {
           let ss = $('.table-child')
@@ -416,7 +425,7 @@ export default {
       },
       getDbTree(options){
         this.removeChooseClass();
-        this.chooseOption = JSON.parse(JSON.stringify(options));
+        this.chooseOption = this.deepClone(options);
         let data = options;
         this.$http.post('/dbtree',data).then(res=>{
           this.dbTree = res.data;
@@ -487,7 +496,7 @@ export default {
         try{
           return result.data.rows[0].COLUMN_NAME;
         }catch(err){
-          console.log('get_primaryKey_error',err);
+          console.log('get_primaryKey_error');
           return null;
         }
       },
@@ -514,7 +523,7 @@ export default {
           return null;
         }
       },
-      async sendSql(){
+      async handleSubmit(){
         let sql = this.monacoInstance.getValue();
         if(sql === ''){
           this.$message.error("请输入sql");
@@ -522,12 +531,13 @@ export default {
         }
         this.loading = true;
         const limitSql = await this.preFixLimitSql(sql);
+        console.log(limitSql);
         await this.pageSelect(limitSql);
       },
       async preFixLimitSql(sql){
         this.pageConfig.pageNum = 1;
         this.pageConfig.total = 0;
-        this.sql = JSON.parse(JSON.stringify(sql));
+        this.sql = this.deepClone(sql);
         if(this.isLimitSql(sql)){
           this.hasLimit = false;
         } else {
@@ -567,10 +577,10 @@ export default {
         return /^select count\(.*?\)((?!,).)*? from/i.test(sql);
       },
       isConfigExist(config){
-        let temp = JSON.parse(JSON.stringify(config));
+        let temp = this.deepClone(config);
         delete temp.name;
         return this.$store.state.Db.dbList.map(item=>{
-          let tempItem = JSON.parse(JSON.stringify(item));
+          let tempItem = this.deepClone(item);
           delete tempItem.name;
           return JSON.stringify(tempItem);
         }).indexOf(JSON.stringify(temp)) !== -1;
