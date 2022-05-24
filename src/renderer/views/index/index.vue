@@ -21,14 +21,14 @@
                 </font>
               </span>
             </template>
-            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.native="()=>{nowDatabase = item.Database}">
+            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.stop.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
                 <span style="margin-left:-30px;">
                   <img src="../../assets/database.png" width="12px">
                   {{item.Database}}
                 </span>
               </template>
-              <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.native="(e)=>{chooseTable(item.Database,item2)}">
+              <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.stop.native="(e)=>{chooseTable(item.Database,item2)}">
                 <span style="margin-left:-40px;">
                   <img src="../../assets/table.png" width="10px">
                   {{item2}}
@@ -44,7 +44,7 @@
         </div>
         <div class="padding10 between items-center">
           <div>
-            <span style="margin-right:20px;">当前连接地址：<font color="#66b1ff">{{chooseOptions.host===undefined?'无':chooseOptions.host}}</font></span>
+            <span style="margin-right:20px;">当前连接地址：<font color="#66b1ff">{{chooseOption.host===undefined?'无':chooseOption.host}}</font></span>
             <span style="margin-right:20px;">当前连接数据库：<font color="#66b1ff">{{nowDatabase===''?'无':nowDatabase}}</font></span>
             <span style="margin-right:20px;">table：<font color="#66b1ff">{{nowTable===''?'无':nowTable}}</font></span>
             <span>共<font color="#66b1ff">{{this.tableData.length}}</font>条数据</span>
@@ -56,7 +56,7 @@
             <el-table-column label="操作" width="50px" v-if="tableData.length!==0&&canDelete">
               <template slot-scope="scope">
                 <div style="display:inline-flex;padding:0 10px;">
-                  <el-button type="danger" size="mini" circle icon="el-icon-delete" @click="removeRow(scope.row)"></el-button>
+                  <el-button size="mini" type="danger" circle icon="el-icon-delete" @click="handleRemove(scope.row)" style="padding:3px;"></el-button>
                 </div>
               </template>
             </el-table-column>
@@ -67,7 +67,7 @@
                 <p style="font-size:12px;color:red;line-height:14px;">{{fields[index].COLUMN_COMMENT}}</p>
               </template>
               <template slot-scope="scope">
-                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="clickRow" @keypress.enter.prevent="(e)=>updateRow(e.target,item.name,JSON.stringify(e.target.innerHTML),item.type,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
+                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="clickRow" @keypress.enter.prevent="(e)=>handleUpdate(item.name,e.target.innerHTML,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
               </template>
             </el-table-column>
           </template>
@@ -155,7 +155,7 @@ export default {
             password: "",
             database: ""
           },
-          chooseOptions:{},
+          chooseOption:{},
           configDialogVisible:false,
           rules: {
             name: [
@@ -225,17 +225,16 @@ export default {
         const {nowDatabase,nowTable} = this;
         const values = valuesStr.substring(1,length1);
         const sql = `INSERT INTO ${nowDatabase}.${nowTable} VALUES (${values})`;
-        const addRes = await this.resultSql(sql,true);
+        const addRes = await this.resultSql(sql);
         this.$message.success('affectedRows Count:'+addRes.data.rows.affectedRows);
         const newObj = {};
-        this.fields.forEach((item,index)=>{
-          newObj[item.COLUMN_NAME] = valueArr[index];
-        })
+        this.fields.forEach((item,index)=>{newObj[item.COLUMN_NAME] = valueArr[index];})
         if(pri){newObj[pri] = addRes.data.rows.insertId};
         if(addRes.data.rows.affectedRows === 1){
-          this.tableData.push(newObj);
+          this.tableData.unshift(newObj);
+          $('.el-table__body-wrapper').scrollTop = 0;
+          this.pageConfig.total = this.pageConfig.total+1;
         }
-        this.pageConfig.total = this.pageConfig.total+1;
       },
       equalsObj(obj1,obj2){
         return JSON.stringify(obj1) === JSON.stringify(obj2);
@@ -417,7 +416,7 @@ export default {
       },
       getDbTree(options){
         this.removeChooseClass();
-        this.chooseOptions = JSON.parse(JSON.stringify(options));
+        this.chooseOption = JSON.parse(JSON.stringify(options));
         let data = options;
         this.$http.post('/dbtree',data).then(res=>{
           this.dbTree = res.data;
@@ -439,7 +438,7 @@ export default {
           item.classList.add('single-row');
         }
       },
-      async removeRow(row){
+      async handleRemove(row){
         this.$confirm('是否删除此列？', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
@@ -461,11 +460,10 @@ export default {
           }
         }).catch(() => {});
       },
-      async updateRow(target,key,value,type,row){
+      async handleUpdate(key,value,row){
         try{
           let primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
-          value = value.replace(/\"(.*)\"/,(all,mat)=>{return `'${mat}'`});
-          let sql = `update ${this.nowDatabase}.${this.nowTable} set ${key} = ${value} where ${primaryKey} = ${row[primaryKey]}`;
+          let sql = `update ${this.nowDatabase}.${this.nowTable} set ${key} = '${value}' where ${primaryKey} = ${row[primaryKey]}`;
           let updateRes = await this.resultSql(sql);
           if(!updateRes.data.hasOwnProperty("fields")){
             this.$message.success(updateRes.data.rows.message.replace("(",""));
@@ -494,16 +492,16 @@ export default {
         }
       },
       async resultSql(sql,loading){
-        if(this.chooseOptions.host === undefined){
+        if(this.chooseOption.host === undefined){
           this.$message.error('请选择连接');
           this.loading = false;
           return;
         }
-        let {chooseOptions} = this;
-        chooseOptions.database = this.nowDatabase;
+        let {chooseOption} = this;
+        chooseOption.database = this.nowDatabase;
         let data = {
           sql,
-          options:chooseOptions
+          options:chooseOption
         }
         try{
           loading&& (this.loading = true);
