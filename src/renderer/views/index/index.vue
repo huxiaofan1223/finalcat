@@ -2,7 +2,7 @@
   <div class="main" @click="clickParent">
       <div class="app-left">
         <div class="justify-center" style="margin:10px 0;">
-          <el-button size="mini" type="primary" @click.stop="showConfigDialog">新增数据库</el-button>
+          <el-button size="mini" type="primary" @click.stop="showConfigDialog">新增连接</el-button>
         </div>
       <div class="justify-center" style="padding:100px 0;" v-if="$store.state.Db.dbList.length===0">
         暂无数据库
@@ -28,13 +28,16 @@
                   {{item.Database}}
                 </span>
               </template>
-              <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.stop.native="(e)=>{chooseTable(item.Database,item2)}">
+              <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.stop.native="chooseTable(item.Database,item2)">
                 <span style="margin-left:-40px;">
                   <img src="../../assets/table.png" width="10px">
                   {{item2}}
                 </span>
               </el-menu-item>
             </el-submenu>
+          <div class="center">
+            <el-button size="mini" type="primary" @click="()=>{newDbConfigDialogVisible = true;}">new db</el-button>
+          </div>
           </el-submenu>
         </el-menu>
       </template>
@@ -88,32 +91,52 @@
           </el-pagination>
         </div>
       </div>
+
+      <el-dialog
+        title="新增数据库"
+        :visible.sync="newDbConfigDialogVisible"
+        width="380px"
+        :before-close="hideNewDbDialog">
+        <el-form :model="newDbForm" :rules="newDbFormRules" ref="newDbForm" size="mini" label-width="80px" label-position="left" class="demo-configForm" @submit.native.prevent @keypress.enter.native="submitNewDbConfig('newDbForm')">
+          <el-form-item label="数据库名" prop="name">
+            <el-input size="mini" v-model="newDbForm.name" placeholder="数据库名"></el-input>
+          </el-form-item>
+          <el-form-item label="排序规则" prop="collateVal">
+            <collate-select v-model="newDbForm.collateVal"></collate-select>
+          </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="hideNewDbDialog" size="mini">取 消</el-button>
+          <el-button type="primary" native-type="submit" @click="submitNewDbConfig('newDbForm')" size="mini" :loading="valideLoading">确 定</el-button>
+        </span>
+      </el-dialog>
+
       <el-dialog
         title="添加配置"
         :visible.sync="configDialogVisible"
-        width="400px"
+        width="380px"
         :before-close="hideConfigDialog">
-        <el-form :model="configForm" :rules="rules" ref="configForm" label-width="55px" class="demo-configForm" @submit.native.prevent @keypress.enter.native="submitConfig('configForm')">
+        <el-form :model="configForm" :rules="rules" ref="configForm" size="mini" label-width="55px" class="demo-configForm" @submit.native.prevent @keypress.enter.native="submitConfig('configForm')">
           <el-form-item label="名称" prop="name">
-            <el-input size="small" v-model="configForm.name"></el-input>
+            <el-input size="small" v-model="configForm.name" placeholder="名称"></el-input>
           </el-form-item>
           <el-row>
             <el-col :span="14">
               <el-form-item label="地址" prop="host">
-                <el-input size="small" v-model="configForm.host"></el-input>
+                <el-input size="small" v-model="configForm.host" placeholder="地址"></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="10">
               <el-form-item label="端口" prop="port">
-                <el-input size="small" v-model.number="configForm.port"></el-input>
+                <el-input size="small" v-model.number="configForm.port" placeholder="端口"></el-input>
               </el-form-item>
             </el-col>
           </el-row>
           <el-form-item label="账号" prop="user">
-            <el-input size="small" v-model="configForm.user"></el-input>
+            <el-input size="small" v-model="configForm.user" placeholder="账号"></el-input>
           </el-form-item>
           <el-form-item label="密码" prop="password">
-            <el-input size="small" type="password" v-model="configForm.password"></el-input>
+            <el-input size="small" type="password" v-model="configForm.password" placeholder="密码"></el-input>
           </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
@@ -121,15 +144,17 @@
           <el-button type="primary" native-type="submit" @click="submitConfig('configForm')" size="mini" :loading="valideLoading">确 定</el-button>
         </span>
       </el-dialog>
-
-      <!-- {{JSON.stringify(this.fields)}} -->
   </div>
 </template>
 
 <script>
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
+import CollateSelect from '../components/CollateSelect';
 export default {
+    components:{
+      CollateSelect
+    },
     data(){
         return {
           monacoInstance:null,
@@ -175,7 +200,20 @@ export default {
             ],
           },
           valideLoading:false,
-          canDelete:false
+          canDelete:false,
+          newDbConfigDialogVisible:false,
+          newDbForm:{
+            name:'',
+            collateVal:'utf8mb4_general_ci',
+          },
+          newDbFormRules:{
+            name: [
+              { required: true, message: '请输入数据库名', trigger: 'blur' },
+            ],
+            collateVal: [
+              { required: true, message: '请选择排序规则', trigger: 'change' },
+            ]
+          }
         }
     },
     created(){
@@ -318,6 +356,10 @@ export default {
           this.$message.success('操作成功');
         })
       },
+      hideNewDbDialog(){
+        this.$refs['newDbForm'].resetFields();
+        this.newDbConfigDialogVisible = false;
+      },
       hideConfigDialog(){
         this.$refs['configForm'].resetFields();
         this.configForm =  {
@@ -328,6 +370,17 @@ export default {
           database: ""
         };
         this.configDialogVisible = false;
+      },
+      async submitNewDbConfig(formName){
+        this.$refs[formName].validate(async(valid) => {
+          if (valid) {
+            const {name,collateVal} = this.newDbForm;
+            const sql = `create database ${name} collate ${collateVal}`;
+            await this.pageSelect(sql);
+            this.getDbTree(this.chooseOption);
+            this.hideNewDbDialog();
+          }
+        });
       },
       submitConfig(formName){
         this.$refs[formName].validate((valid) => {
@@ -347,9 +400,6 @@ export default {
               console.log(err);
               this.valideLoading = false;
             })
-          } else {
-            console.log('error submit!!');
-            return false;
           }
         });
       },
@@ -357,7 +407,7 @@ export default {
         this.monacoInstance.setValue(sql);
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
-          console.log(res.data.rows);
+          console.log('tableData',res.data.rows);
           this.tableData = [];
           setTimeout(()=>{
             this.tableData = res.data.rows;
@@ -372,7 +422,8 @@ export default {
           }
           await this.getFieldCommentType();
         } else {
-          this.$message.success(res.data.rows.message.replace("(",""));
+          if(res.data.rows.message===''){this.$message.success('操作成功');}
+          else {this.$message.success(res.data.rows.message.replace("(",""));}
         }
       },
       async handleSizeChange(val){
@@ -424,6 +475,7 @@ export default {
         }, 0);
       },
       getDbTree(options){
+        console.log('dbtreeOption',options);
         this.removeChooseClass();
         this.chooseOption = this.deepClone(options);
         let data = options;
@@ -529,6 +581,10 @@ export default {
           this.$message.error("请输入sql");
           return;
         }
+        if(this.chooseOption.host === undefined){
+          this.$message.error('请选择连接');
+          return;
+        }
         this.loading = true;
         const limitSql = await this.preFixLimitSql(sql);
         console.log(limitSql);
@@ -565,6 +621,9 @@ export default {
         } else if(type==='delete'||type==='update'||type==='insert'||type==='explain'){
           return 0;
         } else {
+          setTimeout(() => {
+            this.getDbTree(this.chooseOption);
+          }, 1000);
           return 0;
         }
         let res = await this.resultSql(countSql);

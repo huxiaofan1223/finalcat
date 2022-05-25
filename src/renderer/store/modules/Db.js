@@ -1,4 +1,3 @@
-import db from '../../../../server/db';
 import request from '../../utils/request'
 const state = {
   dbList:[]
