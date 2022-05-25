@@ -10,7 +10,7 @@
   }
 </script>
 
-<style>
+<style lang="scss">
   /* CSS */
   html,body{
     margin:0;
@@ -90,6 +90,32 @@
     border-radius:0 !important;
     box-shadow:none!important;
     border:none!important;
+  }
+  .btn-wrapper-simple{
+    display: flex;
+    align-items:center;
+    justify-content:center;
+    height:25px!important;
+    line-height:25px!important;
+    transition:all .2s;
+    padding:10px 20px!important;
+    span.nav-name-right{
+      height:0!important;
+      line-height:0!important;
+      margin:0!important;
+    }
+  }
+  .nav-icon-fontawe{
+    left:5px!important;
+  }
+  .vue-contextmenu-listWrapper .context-menu-list{
+    margin:0!important;
+    transition:all .2s;
+    &:hover{
+      span.nav-name-right{
+        color:white;
+      }
+    }
   }
   ::-webkit-scrollbar
   {

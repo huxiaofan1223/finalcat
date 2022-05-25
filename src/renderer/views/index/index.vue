@@ -20,13 +20,18 @@
                   {{db.host}}:{{db.port}}
                 </font>
               </span>
+              
             </template>
-            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.stop.native="()=>{nowDatabase = item.Database}">
+            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @contextmenu.native="(e)=>{contextmenu(e,item.Database)}" @click.stop.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
                 <span style="margin-left:-30px;">
                   <img src="../../assets/database.png" width="12px">
                   {{item.Database}}
                 </span>
+                <vue-context-menu
+                  :contextMenuData="contextMenuData"
+                  @handleDelDb="handleDelDb"
+                ></vue-context-menu>
               </template>
               <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.stop.native="chooseTable(item.Database,item2)">
                 <span style="margin-left:-40px;">
@@ -213,7 +218,22 @@ export default {
             collateVal: [
               { required: true, message: '请选择排序规则', trigger: 'change' },
             ]
-          }
+          },
+          contextMenuData: {
+            menuName: "demo",
+            axis: {
+              x: null,
+              y: null
+            },
+            chooseDb:null,
+            menulists: [
+              {
+                fnHandler: "handleDelDb",
+                icoName: "el-icon-delete",
+                btnName: "删除"
+              },
+            ]
+        }
         }
     },
     created(){
@@ -235,6 +255,29 @@ export default {
       });
     },
     methods:{
+      async handleDelDb(){
+        const val = this.contextMenuData.chooseDb;
+        this.$confirm('是否删除此数据库('+val+')？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(async() => {
+          
+          const sql = `drop database ${val}`;
+          await this.pageSelect(sql);
+          this.getDbTree(this.chooseOption);
+        })
+      },
+      contextmenu(e,db) {
+        e.preventDefault();
+        var x = e.clientX;
+        var y = e.clientY;
+        this.contextMenuData.chooseDb = db;
+        this.contextMenuData.axis = {
+          x,
+          y
+        };
+      },
       type2value(dataType){
         if(dataType.indexOf('int')>-1){
           return 0;
@@ -269,7 +312,12 @@ export default {
         this.fields.forEach((item,index)=>{newObj[item.COLUMN_NAME] = valueArr[index];})
         if(pri){newObj[pri] = addRes.data.rows.insertId};
         if(addRes.data.rows.affectedRows === 1){
-          this.tableData.unshift(newObj);
+          const tempArr = this.deepClone(this.tableData);
+          this.tableData = [];
+          setTimeout(()=>{
+            this.tableData = tempArr;
+            this.tableData.unshift(newObj);
+          },0)
           $('.el-table__body-wrapper').scrollTop = 0;
           this.pageConfig.total = this.pageConfig.total+1;
         }
@@ -512,7 +560,12 @@ export default {
             this.$message.success('affectedRows Count:'+removeRes.data.rows.affectedRows);
             if(removeRes.data.rows.affectedRows === 1){
               let index = this.tableData.map(item=>item[primaryKey]).indexOf(row[primaryKey]);
-              this.tableData.splice(index,1);
+              const tempArr = this.deepClone(this.tableData);
+              this.tableData = [];
+              setTimeout(()=>{
+                this.tableData = tempArr;
+                this.tableData.splice(index,1);
+              },0)
             }
             this.pageConfig.total = this.pageConfig.total-1;
           }

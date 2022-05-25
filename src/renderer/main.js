@@ -6,6 +6,8 @@ import request from './utils/request'
 import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 Vue.use(ElementUI);
+import VueContextMenu from 'vue-contextmenu'
+Vue.use(VueContextMenu)
 
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.prototype.$http = request;
