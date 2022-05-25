@@ -111,7 +111,10 @@
   .vue-contextmenu-listWrapper .context-menu-list{
     margin:0!important;
     transition:all .2s;
+    background:rgba(28,28,28,.9)!important;
+    color:white;
     &:hover{
+      background: black!important;
       span.nav-name-right{
         color:white;
       }

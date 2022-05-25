@@ -1,5 +1,9 @@
 <template>
   <div class="main" @click="clickParent">
+      <vue-context-menu
+        :contextMenuData="contextMenuData"
+        @handleDelDb="handleDelDb"
+      ></vue-context-menu>
       <div class="app-left">
         <div class="justify-center" style="margin:10px 0;">
           <el-button size="mini" type="primary" @click.stop="showConfigDialog">新增连接</el-button>
@@ -20,18 +24,13 @@
                   {{db.host}}:{{db.port}}
                 </font>
               </span>
-              
             </template>
-            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @contextmenu.native="(e)=>{contextmenu(e,item.Database)}" @click.stop.native="()=>{nowDatabase = item.Database}">
+            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.stop.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
-                <span style="margin-left:-30px;">
+                <span style="margin-left:-30px;display:block;" @contextmenu="(e)=>{contextmenu(e,item.Database)}">
                   <img src="../../assets/database.png" width="12px">
                   {{item.Database}}
                 </span>
-                <vue-context-menu
-                  :contextMenuData="contextMenuData"
-                  @handleDelDb="handleDelDb"
-                ></vue-context-menu>
               </template>
               <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.stop.native="chooseTable(item.Database,item2)">
                 <span style="margin-left:-40px;">
