@@ -261,10 +261,11 @@ export default {
           cancelButtonText: '取消',
           type: 'warning'
         }).then(async() => {
-          
           const sql = `drop database ${val}`;
           await this.pageSelect(sql);
-          this.getDbTree(this.chooseOption);
+          const option = {...this.chooseOption};
+          option.database = '';
+          this.getDbTree(option);
         })
       },
       contextmenu(e,db) {
@@ -470,6 +471,7 @@ export default {
           if(!this.equalsObj(equalFieldsArr,res.data.fields)){
             this.fields = res.data.fields;
           }
+          if(this.getSqlType(sql) === 'select')
           await this.getFieldCommentType();
         } else {
           if(res.data.rows.message===''){this.$message.success('操作成功');}
@@ -641,9 +643,15 @@ export default {
           return;
         }
         this.loading = true;
-        const limitSql = await this.preFixLimitSql(sql);
-        console.log(limitSql);
+        let limitSql = sql;
+        if(this.getSqlType(sql) === 'select'){
+          limitSql = await this.preFixLimitSql(sql);
+        }
         await this.pageSelect(limitSql);
+      },
+      getSqlType(sql){
+        const type = sql.split(" ")[0].toLowerCase();
+        return type;
       },
       async preFixLimitSql(sql){
         this.pageConfig.pageNum = 1;
@@ -652,7 +660,7 @@ export default {
         if(this.isLimitSql(sql)){
           this.hasLimit = false;
         } else {
-          let total = await this.getTableCount(sql);
+          let total = await this.getSqlRowCount(sql);
           this.pageConfig.total = total;
           if(this.pageConfig.pageSize<total){
               let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
@@ -664,7 +672,7 @@ export default {
         }
         return sql;
       },
-      async getTableCount(sql){
+      async getSqlRowCount(sql){
         let type = sql.split(" ")[0].toLowerCase();
         let countSql =  `select count(1) as total from (${sql}) as t${new Date().getTime()}`;
         if(type === 'select'){
@@ -714,6 +722,9 @@ export default {
     width:260px;
     overflow: auto;
     overflow-x:hidden;
+    ::v-deep.el-menu{
+      border-right:none;
+    }
     ::v-deep.el-menu-item{
       height:30px;
       line-height: 30px;
