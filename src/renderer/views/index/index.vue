@@ -229,7 +229,7 @@ export default {
               {
                 fnHandler: "handleDelDb",
                 icoName: "el-icon-delete",
-                btnName: "删除"
+                btnName: "删除数据库"
               },
             ]
         }
@@ -280,8 +280,8 @@ export default {
       type2value(dataType){
         if(dataType.indexOf('int')>-1){
           return 0;
-        } else {
-          return ''
+        } else{
+          return '';
         }
       },
       async handleInsert(){
@@ -295,6 +295,7 @@ export default {
                 pri = item.COLUMN_NAME;
                 return null;
               }
+              if(item.DATA_TYPE === 'datetime') return '1999-02-06 05:00:00';
               return this.type2value(item.DATA_TYPE);
             }
           }
@@ -304,18 +305,20 @@ export default {
         const length1 = valuesStr.length-1;
         const {nowDatabase,nowTable} = this;
         const values = valuesStr.substring(1,length1);
-        const sql = `INSERT INTO ${nowDatabase}.${nowTable} VALUES (${values})`;
-        const addRes = await this.resultSql(sql);
+        const insertSql = `INSERT INTO ${nowDatabase}.${nowTable} VALUES (${values})`;
+        const newSql = insertSql.replace(/,"CURRENT_TIMESTAMP"/g,',CURRENT_TIMESTAMP');
+        const addRes = await this.resultSql(newSql);
         this.$message.success('affectedRows Count:'+addRes.data.rows.affectedRows);
-        const newObj = {};
-        this.fields.forEach((item,index)=>{newObj[item.COLUMN_NAME] = valueArr[index];})
-        if(pri){newObj[pri] = addRes.data.rows.insertId};
+
+        const newRowSql = `select * from ${nowDatabase}.${nowTable} where ${pri}=${addRes.data.rows.insertId}`;
+        const newRowRes = await this.resultSql(newRowSql);
+
         if(addRes.data.rows.affectedRows === 1){
           const tempArr = this.deepClone(this.tableData);
           this.tableData = [];
           setTimeout(()=>{
             this.tableData = tempArr;
-            this.tableData.unshift(newObj);
+            this.tableData.unshift(newRowRes.data.rows[0]);
           },0)
           $('.el-table__body-wrapper').scrollTop = 0;
           this.pageConfig.total = this.pageConfig.total+1;
