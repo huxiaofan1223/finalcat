@@ -508,6 +508,9 @@ export default {
         this.monacoInstance.setValue(sql);
         const type = this.getSqlType(sql);
         let res = await this.resultSql(sql,true);
+        if(type !== 'select'){
+          this.canDelete = false;
+        }
         if(res.data.hasOwnProperty("fields")){
           console.log('tableData',res.data.rows);
           this.tableData = [];
