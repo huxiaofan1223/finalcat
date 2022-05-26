@@ -3,6 +3,12 @@
       <vue-context-menu
         :contextMenuData="contextMenuData"
         @handleDelDb="handleDelDb"
+        v-if="contextMenuData.show"
+      ></vue-context-menu>
+      <vue-context-menu
+        :contextMenuData="tableContextMenuData"
+        @handleDelTable="handleDelTable"
+        v-if="tableContextMenuData.show"
       ></vue-context-menu>
       <div class="app-left">
         <div class="justify-center" style="margin:10px 0;">
@@ -33,7 +39,7 @@
                 </span>
               </template>
               <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.stop.native="chooseTable(item.Database,item2)">
-                <span style="margin-left:-40px;">
+                <span style="margin-left:-40px;display:block;" @contextmenu="(e)=>{contextmenuTable(e,item2)}">
                   <img src="../../assets/table.png" width="10px">
                   {{item2}}
                 </span>
@@ -218,13 +224,30 @@ export default {
               { required: true, message: '请选择排序规则', trigger: 'change' },
             ]
           },
+          tableContextMenuData:{
+            menuName: "table",
+            axis: {
+              x: null,
+              y: null
+            },
+            chooseTable:null,
+            show:false,
+            menulists: [
+              {
+                fnHandler: "handleDelTable",
+                icoName: "el-icon-delete",
+                btnName: "删除表"
+              },
+            ]
+          },
           contextMenuData: {
-            menuName: "demo",
+            menuName: "database",
             axis: {
               x: null,
               y: null
             },
             chooseDb:null,
+            show:false,
             menulists: [
               {
                 fnHandler: "handleDelDb",
@@ -232,7 +255,8 @@ export default {
                 btnName: "删除数据库"
               },
             ]
-        }
+          },
+          
         }
     },
     created(){
@@ -254,6 +278,17 @@ export default {
       });
     },
     methods:{
+      handleDelTable(){
+        const val = this.tableContextMenuData.chooseTable;
+        this.$confirm('是否删除此表('+val+')？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(async() => {
+          const sql = `drop table ${val}`;
+          await this.pageSelect(sql);
+        })
+      },
       async handleDelDb(){
         const val = this.contextMenuData.chooseDb;
         this.$confirm('是否删除此数据库('+val+')？', '提示', {
@@ -263,20 +298,35 @@ export default {
         }).then(async() => {
           const sql = `drop database ${val}`;
           await this.pageSelect(sql);
-          const option = {...this.chooseOption};
-          option.database = '';
-          this.getDbTree(option);
         })
+      },
+      contextmenuTable(e,table){
+        e.preventDefault();
+        this.tableContextMenuData.show = true;
+        var x = e.clientX;
+        var y = e.clientY;
+        this.tableContextMenuData.chooseTable = table;
+        this.$nextTick(()=>{
+          this.tableContextMenuData.axis = {
+            x,
+            y
+          };
+        })
+        this.contextMenuData.show = false;
       },
       contextmenu(e,db) {
         e.preventDefault();
+        this.contextMenuData.show = true;
         var x = e.clientX;
         var y = e.clientY;
         this.contextMenuData.chooseDb = db;
-        this.contextMenuData.axis = {
-          x,
-          y
-        };
+        this.$nextTick(()=>{
+          this.contextMenuData.axis = {
+            x,
+            y
+          };
+        })
+        this.tableContextMenuData.show = false;
       },
       type2value(dataType){
         if(dataType.indexOf('int')>-1){
@@ -456,6 +506,7 @@ export default {
       },
       async pageSelect(sql){
         this.monacoInstance.setValue(sql);
+        const type = this.getSqlType(sql);
         let res = await this.resultSql(sql,true);
         if(res.data.hasOwnProperty("fields")){
           console.log('tableData',res.data.rows);
@@ -471,9 +522,14 @@ export default {
           if(!this.equalsObj(equalFieldsArr,res.data.fields)){
             this.fields = res.data.fields;
           }
-          if(this.getSqlType(sql) === 'select')
+          if(type === 'select')
           await this.getFieldCommentType();
         } else {
+          if(type === 'drop' || type === 'create'){
+            const option = {...this.chooseOption};
+            option.database = '';
+            this.getDbTree(option);
+          }
           if(res.data.rows.message===''){this.$message.success('操作成功');}
           else {this.$message.success(res.data.rows.message.replace("(",""));}
         }
@@ -684,9 +740,6 @@ export default {
         } else if(type==='delete'||type==='update'||type==='insert'||type==='explain'){
           return 0;
         } else {
-          setTimeout(() => {
-            this.getDbTree(this.chooseOption);
-          }, 1000);
           return 0;
         }
         let res = await this.resultSql(countSql);

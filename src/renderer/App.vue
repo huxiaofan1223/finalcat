@@ -108,6 +108,9 @@
   .nav-icon-fontawe{
     left:5px!important;
   }
+  .vue-contextmenu-listWrapper{
+    box-shadow:none!important;
+  }
   .vue-contextmenu-listWrapper .context-menu-list{
     margin:0!important;
     transition:all .2s;
