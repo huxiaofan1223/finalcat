@@ -1,15 +1,5 @@
 <template>
   <div class="main" @click="clickParent">
-      <vue-context-menu
-        :contextMenuData="contextMenuData"
-        @handleDelDb="handleDelDb"
-        v-if="contextMenuData.show"
-      ></vue-context-menu>
-      <vue-context-menu
-        :contextMenuData="tableContextMenuData"
-        @handleDelTable="handleDelTable"
-        v-if="tableContextMenuData.show"
-      ></vue-context-menu>
       <div class="app-left">
         <div class="justify-center" style="margin:10px 0;">
           <el-button size="mini" type="primary" @click.stop="showConfigDialog">新增连接</el-button>
@@ -223,40 +213,7 @@ export default {
             collateVal: [
               { required: true, message: '请选择排序规则', trigger: 'change' },
             ]
-          },
-          tableContextMenuData:{
-            menuName: "table",
-            axis: {
-              x: null,
-              y: null
-            },
-            chooseTable:null,
-            show:false,
-            menulists: [
-              {
-                fnHandler: "handleDelTable",
-                icoName: "el-icon-delete",
-                btnName: "删除表"
-              },
-            ]
-          },
-          contextMenuData: {
-            menuName: "database",
-            axis: {
-              x: null,
-              y: null
-            },
-            chooseDb:null,
-            show:false,
-            menulists: [
-              {
-                fnHandler: "handleDelDb",
-                icoName: "el-icon-delete",
-                btnName: "删除数据库"
-              },
-            ]
-          },
-          
+          }
         }
     },
     created(){
@@ -278,8 +235,7 @@ export default {
       });
     },
     methods:{
-      handleDelTable(){
-        const val = this.tableContextMenuData.chooseTable;
+      handleDelTable(val){
         this.$confirm('是否删除此表('+val+')？', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
@@ -289,8 +245,7 @@ export default {
           await this.pageSelect(sql);
         })
       },
-      async handleDelDb(){
-        const val = this.contextMenuData.chooseDb;
+      async handleDelDb(val){
         this.$confirm('是否删除此数据库('+val+')？', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
@@ -300,33 +255,41 @@ export default {
           await this.pageSelect(sql);
         })
       },
-      contextmenuTable(e,table){
-        e.preventDefault();
-        this.tableContextMenuData.show = true;
-        var x = e.clientX;
-        var y = e.clientY;
-        this.tableContextMenuData.chooseTable = table;
-        this.$nextTick(()=>{
-          this.tableContextMenuData.axis = {
-            x,
-            y
-          };
-        })
-        this.contextMenuData.show = false;
+      contextmenuTable(event,table){
+        this.$contextmenu({
+          items: [
+            {
+              icon: "el-icon-delete",
+              label: "删除表",
+              onClick: () => {
+                this.handleDelTable(table);
+              }
+            }
+          ],
+          event,
+          customClass: "custom-class",
+          zIndex: 3,
+          minWidth:100
+        });
+        return false;
       },
-      contextmenu(e,db) {
-        e.preventDefault();
-        this.contextMenuData.show = true;
-        var x = e.clientX;
-        var y = e.clientY;
-        this.contextMenuData.chooseDb = db;
-        this.$nextTick(()=>{
-          this.contextMenuData.axis = {
-            x,
-            y
-          };
-        })
-        this.tableContextMenuData.show = false;
+      contextmenu(event,db) {
+        this.$contextmenu({
+          items: [
+            {
+              icon: "el-icon-delete",
+              label: "删除数据库",
+              onClick: () => {
+                this.handleDelDb(db);
+              }
+            }
+          ],
+          event,
+          customClass: "custom-class",
+          zIndex: 3,
+          minWidth:100
+        });
+        return false;
       },
       type2value(dataType){
         if(dataType.indexOf('int')>-1){
@@ -768,6 +731,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
+
 .main{
   display: flex;
   height:100vh;

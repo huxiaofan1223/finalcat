@@ -17,7 +17,7 @@
     padding:0;
     color:#444444;
     line-height: 1.3;
-    font-family: PingFangSC-Regular, PingFang SC, 微软雅黑;
+    font-family: PingFangSC-Regular,微软雅黑;
     font-size: 15px;
     font-weight: normal;
   }
@@ -91,38 +91,12 @@
     box-shadow:none!important;
     border:none!important;
   }
-  .btn-wrapper-simple{
-    display: flex;
-    align-items:center;
-    justify-content:center;
-    height:25px!important;
-    line-height:25px!important;
-    transition:all .2s;
-    padding:10px 20px!important;
-    span.nav-name-right{
-      height:0!important;
-      line-height:0!important;
-      margin:0!important;
-    }
+
+
+  .custom-class{
+    padding:0!important;
   }
-  .nav-icon-fontawe{
-    left:5px!important;
-  }
-  .vue-contextmenu-listWrapper{
-    box-shadow:none!important;
-  }
-  .vue-contextmenu-listWrapper .context-menu-list{
-    margin:0!important;
-    transition:all .2s;
-    background:rgba(28,28,28,.9)!important;
-    color:white;
-    &:hover{
-      background: black!important;
-      span.nav-name-right{
-        color:white;
-      }
-    }
-  }
+  
   ::-webkit-scrollbar
   {
     width: 8px;
