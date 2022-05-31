@@ -116,7 +116,7 @@
         :visible.sync="configDialogVisible"
         width="380px"
         :before-close="hideConfigDialog">
-        <el-form :model="configForm" :rules="rules" ref="configForm" size="mini" label-width="55px" class="demo-configForm" @submit.native.prevent @keypress.enter.native="submitConfig('configForm')">
+        <el-form :model="configForm" :rules="rules" ref="configForm" size="mini" label-width="55px" label-position="left" class="demo-configForm" @submit.native.prevent @keypress.enter.native="submitConfig('configForm')">
           <el-form-item label="名称" prop="name">
             <el-input size="small" v-model="configForm.name" placeholder="名称"></el-input>
           </el-form-item>
@@ -144,6 +144,8 @@
           <el-button type="primary" native-type="submit" @click="submitConfig('configForm')" size="mini" :loading="valideLoading">确 定</el-button>
         </span>
       </el-dialog>
+
+      <create-table-dialog :createTableDialogVisible.sync="createTableDialogVisible"></create-table-dialog>
   </div>
 </template>
 
@@ -151,9 +153,11 @@
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
 import CollateSelect from '../components/CollateSelect';
+import CreateTableDialog from './dialog/CreateTableDialog';
 export default {
     components:{
-      CollateSelect
+      CollateSelect,
+      CreateTableDialog
     },
     data(){
         return {
@@ -213,7 +217,8 @@ export default {
             collateVal: [
               { required: true, message: '请选择排序规则', trigger: 'change' },
             ]
-          }
+          },
+          createTableDialogVisible:false
         }
     },
     created(){
@@ -276,6 +281,14 @@ export default {
       contextmenu(event,db) {
         this.$contextmenu({
           items: [
+            {
+              icon: "el-icon-plus",
+              label: "新建表",
+              onClick: () => {
+                // this.handleDelDb(db);
+                this.createTableDialogVisible = true;
+              }
+            },
             {
               icon: "el-icon-delete",
               label: "删除数据库",
@@ -697,12 +710,15 @@ export default {
       async getSqlRowCount(sql){
         let type = sql.split(" ")[0].toLowerCase();
         let countSql =  `select count(1) as total from (${sql}) as t${new Date().getTime()}`;
+        console.log(countSql);
         if(type === 'select'){
-          if(!this.isCountSql(sql))
-            countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from');
-          else{
+          // if(!this.isCountSql(sql))
+          //   countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from');
+          // else{
+          //   countSql = sql;
+          // }
+          if(this.isCountSql(sql))
             countSql = sql;
-          }
         } else if(type==='delete'||type==='update'||type==='insert'||type==='explain'){
           return 0;
         } else {

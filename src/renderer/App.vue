@@ -82,9 +82,9 @@
     padding:0 8px !important;
   }
   .el-dialog__body{
-    padding:0 30px!important;
-    padding-top:15px !important;
-    padding-left:15px !important;
+    padding:20px!important;
+    // padding-top:15px !important;
+    // padding-left:15px !important;
   }
   .el-message-box,.el-dialog{
     border-radius:0 !important;

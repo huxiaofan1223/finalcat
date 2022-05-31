@@ -10,6 +10,10 @@ export default {
     value:{
       type:String,
       required:true
+    },
+    placeholder:{
+      type:String,
+      default:''
     }
   },
   model: {
