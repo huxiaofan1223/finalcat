@@ -145,7 +145,7 @@
         </span>
       </el-dialog>
 
-      <create-table-dialog :createTableDialogVisible.sync="createTableDialogVisible"></create-table-dialog>
+      <create-table-dialog :createTableDialogVisible.sync="createTableDialogVisible" @handleCreateTableSubmit="handleCreateTableSubmit"></create-table-dialog>
   </div>
 </template>
 
@@ -240,6 +240,10 @@ export default {
       });
     },
     methods:{
+      async handleCreateTableSubmit(sql){
+        await this.pageSelect(sql);
+        this.createTableDialogVisible = false;
+      },
       handleDelTable(val){
         this.$confirm('是否删除此表('+val+')？', '提示', {
           confirmButtonText: '确定',
