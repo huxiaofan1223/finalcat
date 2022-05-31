@@ -14,10 +14,11 @@
                 </el-row>
                 <el-row style="padding-bottom:10px;">
                     <el-col :span="4">名字</el-col>
-                    <el-col :span="3">类型</el-col>
+                    <el-col :span="2">类型</el-col>
                     <el-col :span="2">长度</el-col>
                     <el-col :span="4">默认</el-col>
-                    <el-col :span="4">排序规则</el-col>
+                    <el-col :span="3">排序规则</el-col>
+                    <el-col :span="3">属性</el-col>
                     <el-col :span="1">可为空</el-col>
                     <el-col :span="1">自增</el-col>
                     <el-col :span="4">备注</el-col>
@@ -28,7 +29,7 @@
                             <el-input v-model="item.COLUMN_NAME" placeholder="名字"></el-input>
                         </el-form-item>
                     </el-col>
-                    <el-col style="padding-right:10px;" :span="3">
+                    <el-col style="padding-right:10px;" :span="2">
                         <el-form-item>
                             <type-select v-model="item.DATA_TYPE" placeholder="类型"></type-select>
                         </el-form-item>
@@ -40,12 +41,29 @@
                     </el-col>
                     <el-col style="padding-right:10px;" :span="4">
                         <el-form-item>
-                            <el-input v-model="item.COLUMN_DEFAULT" placeholder="默认"></el-input>
+                            <el-select v-model="item.COLUMN_DEFAULT"
+                                filterable
+                                allow-create
+                                default-first-option placeholder="默认">
+                                <el-option label="无" value=""></el-option>
+                                <el-option label="CURRENT_TIMESTAMP" value="CURRENT_TIMESTAMP"></el-option>
+                            </el-select>
                         </el-form-item>
                     </el-col>
-                    <el-col style="padding-right:10px;" :span="4">
+                    <el-col style="padding-right:10px;" :span="3">
                         <el-form-item>
                             <collate-select v-model="item.COLLATION_NAME" placeholder="排序规则"></collate-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col style="padding-right:10px;" :span="3">
+                        <el-form-item>
+                            <el-select v-model="item.EXTRA" placeholder="属性">
+                                <el-option label="无" value=""></el-option>
+                                <el-option label="BINARY" value="BINARY"></el-option>
+                                <el-option label="UNSIGNED" value="UNSIGNED"></el-option>
+                                <el-option label="UNSIGNED ZEROFILL" value="UNSIGNED ZEROFILL"></el-option>
+                                <el-option label="on update CURRENT_TIMESTAMP" value="on update CURRENT_TIMESTAMP"></el-option>
+                            </el-select>
                         </el-form-item>
                     </el-col>
                     <el-col style="padding-right:10px;" :span="1">
@@ -58,7 +76,7 @@
                             <el-checkbox v-model="item.AI" placeholder="自增"></el-checkbox>
                         </el-form-item>
                     </el-col>
-                    <el-col :span="4" style="padding-right:10px;">
+                    <el-col :span="3" style="padding-right:10px;">
                         <el-form-item>
                             <el-input v-model="item.Comment" placeholder="备注"></el-input>
                         </el-form-item>
@@ -128,12 +146,15 @@ export default {
     },
     methods:{
         item2Field(field){
+            const extra = field.EXTRA === ''?'':field.EXTRA;
             const length = field.CHARACTER_MAXIMUM_LENGTH==='' ? '':`(${field.CHARACTER_MAXIMUM_LENGTH})`;
             const nullable = field.IS_NULLABLE==='YES'?'NULL':'NOT NULL';
-            const defaultVal = field.COLUMN_DEFAULT === ''?'':`DEFAULT '${field.COLUMN_DEFAULT}'`;
+            let defaultVal = field.COLUMN_DEFAULT === ''?'':`DEFAULT '${field.COLUMN_DEFAULT}'`;
             const collateVal = field.COLLATION_NAME === ''?'':`COLLATE field.COLLATION_NAME`;
             const ai = field.AI?'AUTO_INCREMENT':'';
-            return `${field.COLUMN_NAME} ${field.DATA_TYPE} ${length} ${collateVal} ${nullable} ${defaultVal} ${ai}`;
+            const comment = field.Comment===''?'':`COMMENT '${field.Comment}'`;
+            if(field.COLUMN_DEFAULT === 'CURRENT_TIMESTAMP') defaultVal='DEFAULT CURRENT_TIMESTAMP';
+            return `${field.COLUMN_NAME} ${field.DATA_TYPE}${length} ${extra} ${collateVal} ${nullable} ${defaultVal} ${ai} ${comment}`;
         },
         getPrimaryString(fields){
             const primaryArr = fields.filter(item=>item.AI).map(item=>"`"+item.COLUMN_NAME+"`");
@@ -148,12 +169,12 @@ export default {
         handleSubmit(){
             this.$refs['form'].validate((valid) => {
                 if (valid) {
-                    const sql = this.form2Sql(this.form);
+                    const sql = this.fields2Sql(this.form);
                     this.$emit('handleCreateTableSubmit',sql);
                 }
             });
         },
-        form2Sql(form){
+        fields2Sql(form){
             const tableName = form.tableName;
             const fieldString = form.fields.map(item=>this.item2Field(item)).join(',');
             const primaryString = this.getPrimaryString(form.fields);
@@ -162,7 +183,7 @@ export default {
         handleSee(){
             this.$refs['form'].validate((valid) => {
                 if (valid) {
-                    const sql = this.form2Sql(this.form);
+                    const sql = this.fields2Sql(this.form);
                     this.$message({
                         duration:100000,
                         showClose:true,
