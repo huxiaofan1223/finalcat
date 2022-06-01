@@ -28,10 +28,10 @@
                   {{item.Database}}
                 </span>
               </template>
-              <el-menu-item v-for="(item2,index2) in item.children" :key="index2+''" :index="`${index3}-${index}-${index2}`" @click.stop.native="chooseTable(item.Database,item2)">
-                <span style="margin-left:-40px;display:block;" @contextmenu="(e)=>{contextmenuTable(e,item2)}">
+              <el-menu-item v-for="(table,tableIndex) in item.children" :key="tableIndex+''" :index="`${index3}-${index}-${tableIndex}`" @click.stop.native="chooseTable(item.Database,table)">
+                <span style="margin-left:-40px;display:block;" @contextmenu="(e)=>{contextmenuTable(e,item.Database,table)}">
                   <img src="../../assets/table.png" width="10px">
-                  {{item2}}
+                  {{table}}
                 </span>
               </el-menu-item>
             </el-submenu>
@@ -145,7 +145,7 @@
         </span>
       </el-dialog>
 
-      <create-table-dialog :createTableDialogVisible.sync="createTableDialogVisible" @handleCreateTableSubmit="handleCreateTableSubmit"></create-table-dialog>
+      <create-table-dialog ref="createTableForm" :form.sync="createTableForm" :createTableDialogVisible.sync="createTableDialogVisible" :createTableChooseDb="createTableChooseDb" @handleCreateTableSubmit="handleCreateTableSubmit"></create-table-dialog>
   </div>
 </template>
 
@@ -218,7 +218,25 @@ export default {
               { required: true, message: '请选择排序规则', trigger: 'change' },
             ]
           },
-          createTableDialogVisible:false
+          createTableDialogVisible:false,
+          createTableChooseDb:'',
+          createTableForm:{
+              tableName:'',
+              fields:[
+                  {
+                      key:new Date().getTime(),
+                      COLUMN_NAME:'',
+                      DATA_TYPE:'INT',
+                      CHARACTER_MAXIMUM_LENGTH:'',
+                      COLUMN_DEFAULT:'',
+                      COLLATION_NAME:'',
+                      IS_NULLABLE:'NO',
+                      EXTRA:'',
+                      AI:false,
+                      COLUMN_COMMENT:''
+                  }
+              ]
+          }
         }
     },
     created(){
@@ -241,8 +259,12 @@ export default {
     },
     methods:{
       async handleCreateTableSubmit(sql){
-        await this.pageSelect(sql);
-        this.createTableDialogVisible = false;
+        try{
+          await this.pageSelect(sql);
+          this.$refs.createTableForm.handleClose();
+        } catch(err) {
+          this.$refs.createTableForm.handleError();
+        }
       },
       handleDelTable(val){
         this.$confirm('是否删除此表('+val+')？', '提示', {
@@ -264,7 +286,7 @@ export default {
           await this.pageSelect(sql);
         })
       },
-      contextmenuTable(event,table){
+      async contextmenuTable(event,db,table){
         this.$contextmenu({
           items: [
             {
@@ -272,6 +294,24 @@ export default {
               label: "删除表",
               onClick: () => {
                 this.handleDelTable(table);
+              }
+            },
+            {
+              icon: "el-icon-edit",
+              label: "修改表结构",
+              onClick: async() => {
+                this.createTableDialogVisible = true;
+                const tableName = table;
+                this.createTableChooseDb = db;
+                const fields = await this.getFields(db,table);
+                fields.forEach(field=>{
+                  if(field.EXTRA==='auto_increment')
+                    field.AI=true;
+                })
+                this.createTableForm = {tableName,fields};
+                this.$forceUpdate();
+                console.log(fields);
+                // this.handleDelTable(table);
               }
             }
           ],
@@ -289,7 +329,7 @@ export default {
               icon: "el-icon-plus",
               label: "新建表",
               onClick: () => {
-                // this.handleDelDb(db);
+                this.createTableChooseDb = db;
                 this.createTableDialogVisible = true;
               }
             },
@@ -404,9 +444,6 @@ export default {
         }
         console.log(obj);
         this.filterDetail2Field(obj);
-      },
-      deepClone(a){
-        return JSON.parse(JSON.stringify(a));
       },
       filterDetail2Field(obj){
         const arr = this.deepClone(this.fields);

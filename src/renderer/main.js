@@ -14,6 +14,18 @@ if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.prototype.$http = request;
 Vue.config.productionTip = false
 
+const deepClone = (a) => {
+  return JSON.parse(JSON.stringify(a));
+}
+
+Vue.prototype.deepClone = deepClone;
+
+const isEmpty = (a) => {
+  return a===''||a===undefined||a===null;
+}
+
+Vue.prototype.isEmpty = isEmpty;
+
 new Vue({
   components: { App },
   router,

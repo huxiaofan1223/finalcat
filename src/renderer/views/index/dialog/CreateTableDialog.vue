@@ -76,13 +76,17 @@
                             <el-checkbox v-model="item.AI" placeholder="自增"></el-checkbox>
                         </el-form-item>
                     </el-col>
-                    <el-col :span="3" style="padding-right:10px;">
+                    <el-col :span="2" style="padding-right:10px;">
                         <el-form-item>
-                            <el-input v-model="item.Comment" placeholder="备注"></el-input>
+                            <el-input v-model="item.COLUMN_COMMENT" placeholder="备注"></el-input>
                         </el-form-item>
                     </el-col>
-                    <el-col :span="1">
-                        <el-button size="mini" type="danger" @click="handleRemove(index)" :disabled="index===0">删除</el-button>
+                    <el-col :span="2">
+                        <el-form-item>
+                            <el-button size="mini" icon="el-icon-delete" circle style="padding:3px;" type="danger" @click="handleRemove(index)" :disabled="index===0"></el-button>
+                            <el-button icon="el-icon-top" size="mini" circle style="padding:3px;" @click="handleToTop(index)" :disabled="index===0"></el-button>
+                            <el-button icon="el-icon-bottom" size="mini" circle style="padding:3px;" @click="handleToBottom(index)" :disabled="index===form.fields.length-1"></el-button>
+                        </el-form-item>
                     </el-col>
                 </el-row>
                 <el-row>
@@ -92,7 +96,7 @@
             <span slot="footer" class="dialog-footer">
                 <el-button @click="handleClose" size="mini">取 消</el-button>
                 <el-button @click="handleSee" size="mini">查看SQL</el-button>
-                <el-button type="primary" native-type="submit" @click="handleSubmit" size="mini">确 定</el-button>
+                <el-button type="primary" native-type="submit" @click="handleSubmit" size="mini" :loading="loading">确 定</el-button>
             </span>
       </el-dialog>
 
@@ -102,6 +106,23 @@
 <script>
 import TypeSelect from '../../components/TypeSelect';
 import CollateSelect from '../../components/CollateSelect';
+const defaultForm = {
+    tableName:'',
+    fields:[
+        {
+            key:new Date().getTime(),
+            COLUMN_NAME:'',
+            DATA_TYPE:'INT',
+            CHARACTER_MAXIMUM_LENGTH:'',
+            COLUMN_DEFAULT:'',
+            COLLATION_NAME:'',
+            IS_NULLABLE:'NO',
+            EXTRA:'',
+            AI:false,
+            COLUMN_COMMENT:''
+        }
+    ]
+}
 export default {
     components:{
         TypeSelect,
@@ -111,28 +132,16 @@ export default {
         form:{
             type:Object,
             default:()=>{
-                return {
-                    tableName:'',
-                    fields:[
-                        {
-                            key:new Date().getTime(),
-                            COLUMN_NAME:'',
-                            DATA_TYPE:'INT',
-                            CHARACTER_MAXIMUM_LENGTH:'',
-                            COLUMN_DEFAULT:'',
-                            COLLATION_NAME:'',
-                            IS_NULLABLE:'NO',
-                            EXTRA:'',
-                            AI:false,
-                            Comment:''
-                        }
-                    ]
-                }
+                return this.deepClone(defaultForm);
             }
         },
         createTableDialogVisible:{
             type:Boolean,
             default:false
+        },
+        createTableChooseDb:{
+            type:String,
+            default:''
         }
     },
     data(){
@@ -141,18 +150,37 @@ export default {
                 tableName:[
                     { required: true, message: '请输入表名', trigger: 'blur' }
                 ]
-            }
+            },
+            loading:false
         }
     },
     methods:{
+        elChangeExForArray (index1, index2, array) {
+            let temp = array[index1]
+            array[index1] = array[index2]
+            array[index2] = temp
+            return array
+        },
+        handleToTop(index){
+            const fields = this.elChangeExForArray(index-1,index,this.form.fields);
+            const form = this.deepClone(this.form);
+            form.fields = fields;
+            this.$emit('update:form',form);
+        },
+        handleToBottom(index){
+            const fields = this.elChangeExForArray(index+1,index,this.form.fields);
+            const form = this.deepClone(this.form);
+            form.fields = fields;
+            this.$emit('update:form',form);
+        },
         item2Field(field){
-            const extra = field.EXTRA === ''?'':field.EXTRA;
-            const length = field.CHARACTER_MAXIMUM_LENGTH==='' ? '':`(${field.CHARACTER_MAXIMUM_LENGTH})`;
+            const extra = this.isEmpty(field.EXTRA)?'':field.EXTRA;
+            const length = this.isEmpty(field.CHARACTER_MAXIMUM_LENGTH) ? '':`(${field.CHARACTER_MAXIMUM_LENGTH})`;
             const nullable = field.IS_NULLABLE==='YES'?'NULL':'NOT NULL';
-            let defaultVal = field.COLUMN_DEFAULT === ''?'':`DEFAULT '${field.COLUMN_DEFAULT}'`;
-            const collateVal = field.COLLATION_NAME === ''?'':`COLLATE field.COLLATION_NAME`;
+            let defaultVal = this.isEmpty(field.COLUMN_DEFAULT)?'':`DEFAULT '${field.COLUMN_DEFAULT}'`;
+            const collateVal = this.isEmpty(field.COLLATION_NAME)?'':`COLLATE field.COLLATION_NAME`;
             const ai = field.AI?'AUTO_INCREMENT':'';
-            const comment = field.Comment===''?'':`COMMENT '${field.Comment}'`;
+            const comment = this.isEmpty(field.COLUMN_COMMENT)?'':`COMMENT '${field.COLUMN_COMMENT}'`;
             if(field.COLUMN_DEFAULT === 'CURRENT_TIMESTAMP') defaultVal='DEFAULT CURRENT_TIMESTAMP';
             return `${field.COLUMN_NAME} ${field.DATA_TYPE}${length} ${extra} ${collateVal} ${nullable} ${defaultVal} ${ai} ${comment}`;
         },
@@ -163,32 +191,42 @@ export default {
             else
                 return ''
         },
+        handleError(){
+            this.loading = false;
+        },
         handleClose(){
+            this.loading = false;
+            const form = this.deepClone(defaultForm);
+            this.$forceUpdate();
+            this.$refs.form.resetFields();
             this.$emit('update:createTableDialogVisible',false);
+            this.$emit('update:form',form);
         },
         handleSubmit(){
             this.$refs['form'].validate((valid) => {
                 if (valid) {
-                    const sql = this.fields2Sql(this.form);
+                    this.loading = true;
+                    const sql = this.form2Sql(this.form);
                     this.$emit('handleCreateTableSubmit',sql);
                 }
             });
         },
-        fields2Sql(form){
+        form2Sql(form){
             const tableName = form.tableName;
             const fieldString = form.fields.map(item=>this.item2Field(item)).join(',');
             const primaryString = this.getPrimaryString(form.fields);
-            return `CREATE TABLE ${tableName} (${fieldString} ${primaryString})`;
+            const db = this.createTableChooseDb;
+            return `CREATE TABLE ${db}.${tableName} (${fieldString} ${primaryString})`;
         },
         handleSee(){
             this.$refs['form'].validate((valid) => {
                 if (valid) {
-                    const sql = this.fields2Sql(this.form);
-                    this.$message({
-                        duration:100000,
-                        showClose:true,
-                        message:sql
-                    })
+                    const sql = this.form2Sql(this.form);
+                    this.$notify({
+                        title: 'sql预览',
+                        message:sql,
+                        duration: 0
+                    });
                 }
             });
         },
@@ -203,12 +241,11 @@ export default {
                 IS_NULLABLE:'NO',
                 EXTRA:'',
                 AI:false,
-                Comment:''
+                COLUMN_COMMENT:''
             }
             this.form.fields.push(field);
         },
         handleRemove(index){
-            console.log(index);
             this.form.fields.splice(index,1);
         }
     }

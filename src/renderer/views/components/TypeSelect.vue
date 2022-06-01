@@ -23,12 +23,14 @@ export default {
   data(){
     return {
       options:[
-        'TINYINT','SMALLINT','INT','BIGINT','FLOAT','DOUBLE','DECIMAL',
-        
-        'CHAR','VARCHAR','TINYBLOB','TINYTEXT','BLOB','TEXT','MEDIUMBLOB','MEDIUMTEXT','LONGBLOB','LONGTEXT',
+        'INT','BIGINT','VARCHAR','TEXT','DATE','DATETIME',
 
-        'DATE','TIME','YEAR','DATETIME','TIMESTAMP',
-      ]
+        'TINYINT','SMALLINT','FLOAT','DOUBLE','DECIMAL',
+        
+        'CHAR','TINYBLOB','TINYTEXT','BLOB','MEDIUMBLOB','MEDIUMTEXT','LONGBLOB','LONGTEXT',
+
+        'TIME','YEAR','TIMESTAMP',
+      ].map(item=>item.toLowerCase())
     }
   },
   methods:{
