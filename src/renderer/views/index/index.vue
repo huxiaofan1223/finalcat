@@ -226,7 +226,7 @@ export default {
                   {
                       key:new Date().getTime(),
                       COLUMN_NAME:'',
-                      DATA_TYPE:'INT',
+                      DATA_TYPE:'int',
                       CHARACTER_MAXIMUM_LENGTH:'',
                       COLUMN_DEFAULT:'',
                       COLLATION_NAME:'',
@@ -263,7 +263,7 @@ export default {
           await this.pageSelect(sql);
           this.$refs.createTableForm.handleClose();
         } catch(err) {
-          this.$refs.createTableForm.handleError();
+          this.$refs.createTableForm.stopLoading();
         }
       },
       handleDelTable(val){
@@ -290,30 +290,36 @@ export default {
         this.$contextmenu({
           items: [
             {
+              icon: "el-icon-edit",
+              label: "修改表结构",
+              onClick: () => {
+                    this.$refs.createTableForm.startLoading();
+                    this.createTableDialogVisible = true;
+                    const tableName = table;
+                    this.createTableChooseDb = db;
+                    setTimeout(()=>{
+                      this.getFields(db,table).then(fields=>{
+                        fields.forEach(field=>{
+                          if(field.EXTRA==='auto_increment')
+                            field.AI=true;
+                        })
+                        this.createTableForm = {tableName,fields};
+                        this.$forceUpdate();
+                        this.$refs.createTableForm.stopLoading();
+                      }).catch(err=>{
+                        console.log('getFieldsError',err);
+                        this.$refs.createTableForm.stopLoading();
+                      })
+                    },50)
+              }
+            },
+            {
               icon: "el-icon-delete",
               label: "删除表",
               onClick: () => {
                 this.handleDelTable(table);
               }
             },
-            {
-              icon: "el-icon-edit",
-              label: "修改表结构",
-              onClick: async() => {
-                this.createTableDialogVisible = true;
-                const tableName = table;
-                this.createTableChooseDb = db;
-                const fields = await this.getFields(db,table);
-                fields.forEach(field=>{
-                  if(field.EXTRA==='auto_increment')
-                    field.AI=true;
-                })
-                this.createTableForm = {tableName,fields};
-                this.$forceUpdate();
-                console.log(fields);
-                // this.handleDelTable(table);
-              }
-            }
           ],
           event,
           customClass: "custom-class",

@@ -9,7 +9,7 @@ export default {
   props:{
     value:{
       type:String,
-      default:'INT'
+      default:'int'
     },
     placeholder:{
       type:String,

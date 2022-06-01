@@ -4,7 +4,7 @@
         :visible.sync="createTableDialogVisible"
         width="1200px"
         :before-close="handleClose">
-            <el-form size="mini" label-position="top" :model="form" :rules="rules" ref="form">
+            <el-form size="mini" label-position="top" :model="form" :rules="rules" ref="form" v-loading="loading" element-loading-text="loading">
                 <el-row>
                     <el-col :span="4">
                         <el-form-item label="表名" prop="tableName">
@@ -16,7 +16,7 @@
                     <el-col :span="4">名字</el-col>
                     <el-col :span="2">类型</el-col>
                     <el-col :span="2">长度</el-col>
-                    <el-col :span="4">默认</el-col>
+                    <el-col :span="3">默认</el-col>
                     <el-col :span="3">排序规则</el-col>
                     <el-col :span="3">属性</el-col>
                     <el-col :span="1">可为空</el-col>
@@ -39,7 +39,7 @@
                             <el-input v-model="item.CHARACTER_MAXIMUM_LENGTH" placeholder="长度"></el-input>
                         </el-form-item>
                     </el-col>
-                    <el-col style="padding-right:10px;" :span="4">
+                    <el-col style="padding-right:10px;" :span="3">
                         <el-form-item>
                             <el-select v-model="item.COLUMN_DEFAULT"
                                 filterable
@@ -76,7 +76,7 @@
                             <el-checkbox v-model="item.AI" placeholder="自增"></el-checkbox>
                         </el-form-item>
                     </el-col>
-                    <el-col :span="2" style="padding-right:10px;">
+                    <el-col :span="3" style="padding-right:10px;">
                         <el-form-item>
                             <el-input v-model="item.COLUMN_COMMENT" placeholder="备注"></el-input>
                         </el-form-item>
@@ -96,7 +96,7 @@
             <span slot="footer" class="dialog-footer">
                 <el-button @click="handleClose" size="mini">取 消</el-button>
                 <el-button @click="handleSee" size="mini">查看SQL</el-button>
-                <el-button type="primary" native-type="submit" @click="handleSubmit" size="mini" :loading="loading">确 定</el-button>
+                <el-button type="primary" native-type="submit" @click="handleSubmit" size="mini">确 定</el-button>
             </span>
       </el-dialog>
 
@@ -112,7 +112,7 @@ const defaultForm = {
         {
             key:new Date().getTime(),
             COLUMN_NAME:'',
-            DATA_TYPE:'INT',
+            DATA_TYPE:'int',
             CHARACTER_MAXIMUM_LENGTH:'',
             COLUMN_DEFAULT:'',
             COLLATION_NAME:'',
@@ -191,16 +191,21 @@ export default {
             else
                 return ''
         },
-        handleError(){
+        startLoading(){
+            this.loading = true;
+            this.$forceUpdate();
+        },
+        stopLoading(){
             this.loading = false;
+            this.$forceUpdate();
         },
         handleClose(){
             this.loading = false;
-            const form = this.deepClone(defaultForm);
             this.$forceUpdate();
-            this.$refs.form.resetFields();
-            this.$emit('update:createTableDialogVisible',false);
+            const form = this.deepClone(defaultForm);
             this.$emit('update:form',form);
+            this.$emit('update:createTableDialogVisible',false);
+            // this.$refs.form.resetFields();
         },
         handleSubmit(){
             this.$refs['form'].validate((valid) => {
@@ -234,7 +239,7 @@ export default {
             const field = {
                 key:new Date().getTime(),
                 COLUMN_NAME:'',
-                DATA_TYPE:'INT',
+                DATA_TYPE:'int',
                 CHARACTER_MAXIMUM_LENGTH:'',
                 COLUMN_DEFAULT:'',
                 COLLATION_NAME:'',
