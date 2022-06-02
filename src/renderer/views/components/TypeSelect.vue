@@ -1,5 +1,5 @@
 <template>
-  <el-select :value="value" @change="handleChange" style="width:100%;" :placeholder="placeholder">
+  <el-select :value="value" @change="handleChange" style="width:100%;" :placeholder="placeholder" v-bind="$attrs">
     <el-option v-for="option in options" :key="option" :value="option" :label="option"></el-option>
   </el-select>
 </template>

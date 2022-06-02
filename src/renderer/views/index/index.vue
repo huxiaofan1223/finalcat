@@ -145,8 +145,22 @@
         </span>
       </el-dialog>
 
-      <create-table-dialog ref="createTableForm" :form.sync="createTableForm" :createTableDialogVisible.sync="createTableDialogVisible" :createTableChooseDb="createTableChooseDb" @handleCreateTableSubmit="handleCreateTableSubmit"></create-table-dialog>
-      <edit-table-dialog ref="editTableForm" :form.sync="editTableForm" :createTableDialogVisible.sync="editTableDialogVisible" :createTableChooseDb="editTableChooseDb" @handleDropColumn="handleDropColumn"></edit-table-dialog>
+      <create-table-dialog 
+        ref="createTableForm" 
+        :form.sync="createTableForm" 
+        :createTableDialogVisible.sync="createTableDialogVisible" 
+        :createTableChooseDb="createTableChooseDb" 
+        @handleCreateTableSubmit="handleCreateTableSubmit"
+      ></create-table-dialog>
+      <edit-table-dialog 
+        ref="editTableForm" 
+        :form.sync="editTableForm"
+        :createTableDialogVisible.sync="editTableDialogVisible" 
+        :createTableChooseDb="editTableChooseDb" 
+        @handleDropColumn="handleDropColumn"
+        @handleChangeColumn="handleChangeColumn"
+        @handleModifyColumn="handleModifyColumn"
+      ></edit-table-dialog>
   </div>
 </template>
 
@@ -279,15 +293,34 @@ export default {
           language:"sql",
       });
     },
-    updated(){
-      console.log(new Date().getTime(),'updated');
-    },
     methods:{
+      async handleModifyColumn(sql,db,table,index,toTop){
+        try{
+          this.$refs.editTableForm.startLoading();
+          await this.pageSelect(sql);
+          this.$refs.editTableForm.stopLoading();
+          this.$forceUpdate();
+          toTop?this.$refs.editTableForm.handleToTop(index):this.$refs.editTableForm.handleToBottom(index);
+        } catch(err) {
+          this.$refs.editTableForm.stopLoading();
+        }
+      },
+      async handleChangeColumn(sql){
+        try{
+          this.$refs.editTableForm.startLoading();
+          await this.pageSelect(sql);
+          this.$refs.editTableForm.stopLoading();
+          this.$refs.editTableForm.resetEditIndex();
+          this.editTableForm.fields.forEach(item=>item.insert=false);
+          this.$forceUpdate();
+        } catch(err) {
+          this.$refs.editTableForm.stopLoading();
+        }
+      },
       async handleDropColumn(sql,index){
         try{
           await this.pageSelect(sql);
           this.editTableForm.fields.splice(index,1);
-          // this.$refs.editTableForm.handleClose();
         } catch(err) {
           this.$refs.editTableForm.stopLoading();
         }
@@ -332,17 +365,12 @@ export default {
                     const tableName = table;
                     this.editTableChooseDb = db;
                     setTimeout(()=>{
-                      console.log(new Date().getTime(),'before fetch');
                       this.getFields(db,table).then(fields=>{
-                        console.log(new Date().getTime(),'after fetch');
                         fields.forEach(field=>{
                           if(field.EXTRA==='auto_increment')
                             field.AI=true;
                         })
-                        console.log(new Date().getTime(),'before watcher');
                         this.editTableForm = {tableName,fields};
-                        // this.$forceUpdate();
-                        console.log(new Date().getTime(),'after watcher');
                         this.$refs.editTableForm.stopLoading();
                       }).catch(err=>{
                         console.log('getFieldsError',err);

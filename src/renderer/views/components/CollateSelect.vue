@@ -1,5 +1,5 @@
 <template>
-  <el-select :value="value" @change="handleChange" style="width:100%;">
+  <el-select :value="value" @change="handleChange" style="width:100%;" v-bind="$attrs">
     <el-option v-for="option in options" :key="option.Collation" :value="option.Collation" :label="option.Collation"></el-option>
   </el-select>
 </template>
@@ -11,10 +11,10 @@ export default {
       type:String|null,
       required:true
     },
-    placeholder:{
-      type:String,
-      default:''
-    }
+    // placeholder:{
+    //   type:String,
+    //   default:''
+    // },
   },
   model: {
     prop: 'value',

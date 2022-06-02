@@ -83,9 +83,9 @@
                     </el-col>
                     <el-col :span="2">
                         <el-form-item>
-                            <el-button size="mini" icon="el-icon-delete" circle style="padding:3px;" type="danger" @click="handleRemove(index)" :disabled="index===0"></el-button>
                             <el-button icon="el-icon-top" size="mini" circle style="padding:3px;" @click="handleToTop(index)" :disabled="index===0"></el-button>
                             <el-button icon="el-icon-bottom" size="mini" circle style="padding:3px;" @click="handleToBottom(index)" :disabled="index===form.fields.length-1"></el-button>
+                            <el-button size="mini" icon="el-icon-delete" circle style="padding:3px;" type="danger" @click="handleRemove(index)" :disabled="index===0"></el-button>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -178,7 +178,7 @@ export default {
             const length = this.isEmpty(field.CHARACTER_MAXIMUM_LENGTH) ? '':`(${field.CHARACTER_MAXIMUM_LENGTH})`;
             const nullable = field.IS_NULLABLE==='YES'?'NULL':'NOT NULL';
             let defaultVal = this.isEmpty(field.COLUMN_DEFAULT)?'':`DEFAULT '${field.COLUMN_DEFAULT}'`;
-            const collateVal = this.isEmpty(field.COLLATION_NAME)?'':`COLLATE field.COLLATION_NAME`;
+            const collateVal = this.isEmpty(field.COLLATION_NAME)?'':`COLLATE ${field.COLLATION_NAME}`;
             const ai = field.AI?'AUTO_INCREMENT':'';
             const comment = this.isEmpty(field.COLUMN_COMMENT)?'':`COMMENT '${field.COLUMN_COMMENT}'`;
             if(field.COLUMN_DEFAULT === 'CURRENT_TIMESTAMP') defaultVal='DEFAULT CURRENT_TIMESTAMP';
