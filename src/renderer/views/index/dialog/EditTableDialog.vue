@@ -1,6 +1,6 @@
 <template>
       <el-dialog
-        title="新建表"
+        title="修改表"
         :visible.sync="createTableDialogVisible"
         width="1200px"
         :before-close="handleClose">
@@ -83,7 +83,7 @@
                     </el-col>
                     <el-col :span="2">
                         <el-form-item>
-                            <el-button size="mini" icon="el-icon-delete" circle style="padding:3px;" type="danger" @click="handleRemove(index)" :disabled="index===0"></el-button>
+                            <el-button size="mini" icon="el-icon-delete" circle style="padding:3px;" type="danger" @click="handleRemove(index,item.COLUMN_NAME)" :disabled="index===0"></el-button>
                             <el-button icon="el-icon-top" size="mini" circle style="padding:3px;" @click="handleToTop(index)" :disabled="index===0"></el-button>
                             <el-button icon="el-icon-bottom" size="mini" circle style="padding:3px;" @click="handleToBottom(index)" :disabled="index===form.fields.length-1"></el-button>
                         </el-form-item>
@@ -246,8 +246,17 @@ export default {
             }
             this.form.fields.push(field);
         },
-        handleRemove(index){
-            this.form.fields.splice(index,1);
+        handleRemove(index,name){
+            const db = this.createTableChooseDb;
+            const table = this.form.tableName;
+            const sql = `ALTER TABLE ${db}.${table} DROP ${name}`;
+            this.$confirm('是否删除此字段('+name+')？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(async() => {
+                this.$emit('handleDropColumn',sql,index);
+            })
         }
     }
 }

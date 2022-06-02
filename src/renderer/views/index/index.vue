@@ -146,6 +146,7 @@
       </el-dialog>
 
       <create-table-dialog ref="createTableForm" :form.sync="createTableForm" :createTableDialogVisible.sync="createTableDialogVisible" :createTableChooseDb="createTableChooseDb" @handleCreateTableSubmit="handleCreateTableSubmit"></create-table-dialog>
+      <edit-table-dialog ref="editTableForm" :form.sync="editTableForm" :createTableDialogVisible.sync="editTableDialogVisible" :createTableChooseDb="editTableChooseDb" @handleDropColumn="handleDropColumn"></edit-table-dialog>
   </div>
 </template>
 
@@ -154,9 +155,11 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
 import CollateSelect from '../components/CollateSelect';
 import CreateTableDialog from './dialog/CreateTableDialog';
+import EditTableDialog from './dialog/EditTableDialog';
 export default {
     components:{
       CollateSelect,
+      EditTableDialog,
       CreateTableDialog
     },
     data(){
@@ -236,6 +239,25 @@ export default {
                       COLUMN_COMMENT:''
                   }
               ]
+          },
+          editTableDialogVisible:false,
+          editTableChooseDb:'',
+          editTableForm:{
+              tableName:'',
+              fields:[
+                  {
+                      key:new Date().getTime(),
+                      COLUMN_NAME:'',
+                      DATA_TYPE:'int',
+                      CHARACTER_MAXIMUM_LENGTH:'',
+                      COLUMN_DEFAULT:'',
+                      COLLATION_NAME:'',
+                      IS_NULLABLE:'NO',
+                      EXTRA:'',
+                      AI:false,
+                      COLUMN_COMMENT:''
+                  }
+              ]
           }
         }
     },
@@ -257,7 +279,19 @@ export default {
           language:"sql",
       });
     },
+    updated(){
+      console.log(new Date().getTime(),'updated');
+    },
     methods:{
+      async handleDropColumn(sql,index){
+        try{
+          await this.pageSelect(sql);
+          this.editTableForm.fields.splice(index,1);
+          // this.$refs.editTableForm.handleClose();
+        } catch(err) {
+          this.$refs.editTableForm.stopLoading();
+        }
+      },
       async handleCreateTableSubmit(sql){
         try{
           await this.pageSelect(sql);
@@ -293,22 +327,26 @@ export default {
               icon: "el-icon-edit",
               label: "修改表结构",
               onClick: () => {
-                    this.$refs.createTableForm.startLoading();
-                    this.createTableDialogVisible = true;
+                    this.$refs.editTableForm.startLoading();
+                    this.editTableDialogVisible = true;
                     const tableName = table;
-                    this.createTableChooseDb = db;
+                    this.editTableChooseDb = db;
                     setTimeout(()=>{
+                      console.log(new Date().getTime(),'before fetch');
                       this.getFields(db,table).then(fields=>{
+                        console.log(new Date().getTime(),'after fetch');
                         fields.forEach(field=>{
                           if(field.EXTRA==='auto_increment')
                             field.AI=true;
                         })
-                        this.createTableForm = {tableName,fields};
-                        this.$forceUpdate();
-                        this.$refs.createTableForm.stopLoading();
+                        console.log(new Date().getTime(),'before watcher');
+                        this.editTableForm = {tableName,fields};
+                        // this.$forceUpdate();
+                        console.log(new Date().getTime(),'after watcher');
+                        this.$refs.editTableForm.stopLoading();
                       }).catch(err=>{
                         console.log('getFieldsError',err);
-                        this.$refs.createTableForm.stopLoading();
+                        this.$refs.editTableForm.stopLoading();
                       })
                     },50)
               }
