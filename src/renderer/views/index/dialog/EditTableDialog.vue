@@ -143,7 +143,7 @@ export default {
         form:{
             deep:true,
             handler(val){
-                this.insertIndex = val.fields.length-1;
+                this.insertIndex = this.insertOptions.length-2;
             }
         }
     },
@@ -168,7 +168,7 @@ export default {
             return !this.form.fields[this.form.fields.length-1].insert;
         },
         insertOptions(){
-            const options = this.form.fields.map((item,index)=>{
+            const options = this.form.fields.filter(item=>!item.insert).map((item,index)=>{
                 const name = item.COLUMN_NAME+' 之后';
                 return {index,name};
             })
