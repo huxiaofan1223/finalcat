@@ -375,7 +375,8 @@ export default {
                     this.editTableChooseDb = db;
                     setTimeout(()=>{
                       this.getFields(db,table).then(fields=>{
-                        fields.forEach(field=>{
+                        fields.forEach((field,index)=>{
+                          field.key = index;
                           field.length = this.columnType2Length(field.COLUMN_TYPE);
                           if(field.EXTRA==='auto_increment')
                             field.AI=true;
