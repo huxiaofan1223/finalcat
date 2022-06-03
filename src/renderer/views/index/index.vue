@@ -244,7 +244,7 @@ export default {
                       key:new Date().getTime(),
                       COLUMN_NAME:'',
                       DATA_TYPE:'int',
-                      CHARACTER_MAXIMUM_LENGTH:'',
+                      length:'',
                       COLUMN_DEFAULT:'',
                       COLLATION_NAME:'',
                       IS_NULLABLE:'NO',
@@ -263,7 +263,7 @@ export default {
                       key:new Date().getTime(),
                       COLUMN_NAME:'',
                       DATA_TYPE:'int',
-                      CHARACTER_MAXIMUM_LENGTH:'',
+                      length:'',
                       COLUMN_DEFAULT:'',
                       COLLATION_NAME:'',
                       IS_NULLABLE:'NO',
@@ -353,6 +353,15 @@ export default {
           await this.pageSelect(sql);
         })
       },
+      // int(2)=>2
+      columnType2Length(val){
+        const mt = val.match(/.*\((\d+)\)/);
+        if(mt!==null){
+          return mt[1];
+        } else {
+          return '';
+        }
+      },
       async contextmenuTable(event,db,table){
         this.$contextmenu({
           items: [
@@ -367,16 +376,18 @@ export default {
                     setTimeout(()=>{
                       this.getFields(db,table).then(fields=>{
                         fields.forEach(field=>{
+                          field.length = this.columnType2Length(field.COLUMN_TYPE);
                           if(field.EXTRA==='auto_increment')
                             field.AI=true;
                         })
                         this.editTableForm = {tableName,fields};
+                        this.$forceUpdate();
                         this.$refs.editTableForm.stopLoading();
                       }).catch(err=>{
                         console.log('getFieldsError',err);
                         this.$refs.editTableForm.stopLoading();
                       })
-                    },50)
+                    },100)
               }
             },
             {

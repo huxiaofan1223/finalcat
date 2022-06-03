@@ -36,7 +36,7 @@
                     </el-col>
                     <el-col style="padding-right:10px;" :span="2">
                         <el-form-item>
-                            <el-input v-model="item.CHARACTER_MAXIMUM_LENGTH" placeholder="长度" :readonly="editIndex!==index"></el-input>
+                            <el-input v-model="item.length" placeholder="长度" :readonly="editIndex!==index"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col style="padding-right:10px;" :span="3">
@@ -123,7 +123,7 @@ const defaultForm = {
             key:new Date().getTime(),
             COLUMN_NAME:'',
             DATA_TYPE:'int',
-            CHARACTER_MAXIMUM_LENGTH:'',
+            length:'',
             COLUMN_DEFAULT:'',
             COLLATION_NAME:'',
             IS_NULLABLE:'NO',
@@ -143,6 +143,9 @@ export default {
         form:{
             deep:true,
             handler(val){
+                if(this.form.fields.some(item=>item.insert)){
+                    return;
+                }
                 this.insertIndex = this.insertOptions.length-2;
             }
         }
@@ -217,6 +220,7 @@ export default {
                         sql = `ALTER TABLE ${db}.${table} ADD ${fieldString} first`;
                     } else {
                         const beforeColumnName = bacConfig.fields[this.insertIndex].COLUMN_NAME;
+                        console.log(this.insertIndex);
                         sql = `ALTER TABLE ${db}.${table} ADD ${fieldString} after ${beforeColumnName}`;
                     }
                 }
@@ -262,7 +266,7 @@ export default {
         },
         item2Field(field){
             const extra = this.isEmpty(field.EXTRA)?'':field.EXTRA;
-            const length = this.isEmpty(field.CHARACTER_MAXIMUM_LENGTH) ? '':`(${field.CHARACTER_MAXIMUM_LENGTH})`;
+            const length = this.isEmpty(field.length) ? '':`(${field.length})`;
             const nullable = field.IS_NULLABLE==='YES'?'NULL':'NOT NULL';
             let defaultVal = this.isEmpty(field.COLUMN_DEFAULT)?'':`DEFAULT '${field.COLUMN_DEFAULT}'`;
             const collateVal = this.isEmpty(field.COLLATION_NAME)?'':`COLLATE ${field.COLLATION_NAME}`;
@@ -323,7 +327,7 @@ export default {
                 key:new Date().getTime(),
                 COLUMN_NAME:'',
                 DATA_TYPE:'int',
-                CHARACTER_MAXIMUM_LENGTH:'',
+                length:'',
                 COLUMN_DEFAULT:'',
                 COLLATION_NAME:'',
                 IS_NULLABLE:'NO',
