@@ -165,7 +165,7 @@ export default {
     },
     computed:{
         canInsert(){
-            return !this.form.fields[this.form.fields.length-1].insert;
+            return !this.form.fields.some(item=>item.insert);
         },
         insertOptions(){
             const options = this.form.fields.filter(item=>!item.insert).map((item,index)=>{
