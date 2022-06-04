@@ -6,9 +6,18 @@
         :before-close="handleClose">
             <el-form class="form" size="mini" label-position="top" :model="form" :rules="rules" ref="form" v-loading="loading" element-loading-text="loading...">
                 <el-row>
-                    <el-col :span="3">
+                    <el-col :span="3" style="padding-right:10px;">
                         <el-form-item label="表名" prop="tableName">
-                            <el-input v-model="form.tableName" placeholder="表名"></el-input>
+                            <el-input v-model="form.tableName" placeholder="表名" :readonly="!editTableNameFlag"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="操作">
+                            <el-button icon="el-icon-edit" size="mini" circle style="padding:3px;" @click="handleChangeTableName" v-if="!editTableNameFlag"></el-button>
+                            <template v-else>
+                                <el-button icon="el-icon-check" size="mini" circle style="padding:3px;" @click="handleChangeTableNameConfirm"></el-button>
+                                <el-button icon="el-icon-close" size="mini" circle style="padding:3px;" @click="handleChangeTableNameCancel"></el-button>
+                            </template>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -87,7 +96,7 @@
                             <el-button v-if="!item.insert" icon="el-icon-top" size="mini" circle style="padding:3px;" @click="handleModify(index,true)" :disabled="index===0"></el-button>
                             <el-button v-if="!item.insert" icon="el-icon-bottom" size="mini" circle style="padding:3px;" @click="handleModify(index,false)" :disabled="index===form.fields.length-1"></el-button>
                             <template v-if="index===editIndex">
-                                <el-button icon="el-icon-check" size="mini" circle style="padding:3px;" @click="handleEditCheck(item)"></el-button>
+                                <el-button icon="el-icon-check" size="mini" circle style="padding:3px;" @click="handleEditConfirm(item)"></el-button>
                                 <el-button icon="el-icon-close" size="mini" circle style="padding:3px;" @click="handleEditCancel(index)"></el-button>
                             </template>
                             <el-button icon="el-icon-edit" size="mini" circle style="padding:3px;" @click="handleEdit(index)" v-else></el-button>
@@ -189,24 +198,54 @@ export default {
             loading:false,
             editIndex:'',
             bacConfig:{},
-            insertIndex:''
+            insertIndex:'',
+            editTableNameFlag:false
         }
     },
     methods:{
+        handleChangeTableName(){
+            this.editTableNameFlag = true;
+            this.editIndex = '';
+            bacConfig = this.deepClone(this.form);
+        },
+        handleChangeTableNameConfirm(){
+            const oldTableName = bacConfig.tableName;
+            const newTableName = this.form.tableName;
+            const db = this.createTableChooseDb;
+            const sql = `alter table ${db}.${oldTableName} rename to ${newTableName}`;
+            this.$emit('handleRenameTable',sql,db,oldTableName,newTableName);
+        },
+        handleChangeTableNameCancel(){
+            this.editTableNameFlag = false;
+            const hasChange = !this.equals(bacConfig,this.form);
+            console.log(hasChange);
+            if(hasChange){this.$emit('update:form',bacConfig)};
+            bacConfig = {};
+        },
         resetEditIndex(){
             this.editIndex = '';
+            this.editTableNameFlag = false;
         },
         handleEditCancel(){
             this.editIndex = '';
             const hasChange = !this.equals(bacConfig,this.form);
+            console.log('cancel',this.form.tableName);
+            console.log('cancel',bacConfig);
             if(hasChange){this.$emit('update:form',bacConfig)};
             bacConfig = {};
         },
         handleEdit(index){
-            this.editIndex = index;
-            bacConfig = this.deepClone(this.form);
+            if(this.editTableNameFlag){
+                const hasChange = !this.equals(bacConfig,this.form);
+                if(hasChange){this.$emit('update:form',bacConfig)};
+            }
+            this.$nextTick(()=>{
+                this.editIndex = index;
+                this.editTableNameFlag = false;
+                bacConfig = this.deepClone(this.form);
+            })
         },
-        handleEditCheck(field){
+        handleEditConfirm(field){
             const isInsert = field.insert;
             const db = this.createTableChooseDb;
             const table = this.form.tableName;
@@ -252,13 +291,13 @@ export default {
             }
             this.$emit('handleModifyColumn',sql,db,table,index,toTop);
         },
-        handleToTop(index){
+        ColumnModifyToTop(index){
             const fields = this.elChangeExForArray(index-1,index,this.form.fields);
             const form = this.deepClone(this.form);
             form.fields = fields;
             this.$emit('update:form',form);
         },
-        handleToBottom(index){
+        ColumnModifyToBottom(index){
             const fields = this.elChangeExForArray(index+1,index,this.form.fields);
             const form = this.deepClone(this.form);
             form.fields = fields;

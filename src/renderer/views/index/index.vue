@@ -160,6 +160,7 @@
         @handleDropColumn="handleDropColumn"
         @handleChangeColumn="handleChangeColumn"
         @handleModifyColumn="handleModifyColumn"
+        @handleRenameTable="handleRenameTable"
       ></edit-table-dialog>
   </div>
 </template>
@@ -294,13 +295,23 @@ export default {
       });
     },
     methods:{
+      async handleRenameTable(sql,db,oldTableName,newTableName){
+        try{
+          this.$refs.editTableForm.startLoading();
+          await this.pageSelect(sql);
+          this.editTableForm.tableName = newTableName;
+          this.$refs.editTableForm.resetEditIndex();
+          this.$refs.editTableForm.stopLoading();
+        } catch(err) {
+          this.$refs.editTableForm.stopLoading();
+        }
+      },
       async handleModifyColumn(sql,db,table,index,toTop){
         try{
           this.$refs.editTableForm.startLoading();
           await this.pageSelect(sql);
           this.$refs.editTableForm.stopLoading();
-          this.$forceUpdate();
-          toTop?this.$refs.editTableForm.handleToTop(index):this.$refs.editTableForm.handleToBottom(index);
+          toTop?this.$refs.editTableForm.ColumnModifyToTop(index):this.$refs.editTableForm.ColumnModifyToBottom(index);
         } catch(err) {
           this.$refs.editTableForm.stopLoading();
         }
@@ -374,13 +385,20 @@ export default {
                     const tableName = table;
                     this.editTableChooseDb = db;
                     setTimeout(()=>{
-                      this.getFields(db,table).then(fields=>{
-                        fields.forEach((field,index)=>{
+                      this.getFields(db,table).then(columns=>{
+                        columns.forEach((field,index)=>{
                           field.key = index;
                           field.length = this.columnType2Length(field.COLUMN_TYPE);
                           if(field.EXTRA==='auto_increment')
                             field.AI=true;
+                          else
+                            field.AI=false;
                         })
+                        const fields = columns.map(item=>{
+                          const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT} = item;
+                          return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT};
+                        })
+                        console.log(fields);
                         this.editTableForm = {tableName,fields};
                         this.$forceUpdate();
                         this.$refs.editTableForm.stopLoading();
@@ -629,7 +647,7 @@ export default {
           if(type === 'select')
           await this.getFieldCommentType();
         } else {
-          if(type === 'drop' || type === 'create'){
+          if(type === 'drop' || type === 'create' || type === 'alter'){
             const option = {...this.chooseOption};
             option.database = '';
             this.getDbTree(option);
