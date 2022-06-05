@@ -853,13 +853,15 @@ export default {
       async getSqlRowCount(sql){
         let type = sql.split(" ")[0].toLowerCase();
         let countSql =  `select count(1) as total from (${sql}) as t${new Date().getTime()}`;
-        console.log(countSql);
         if(type === 'select'){
           // if(!this.isCountSql(sql))
           //   countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from');
           // else{
           //   countSql = sql;
           // }
+          if(sql.indexOf(';')>-1){
+            return 0;
+          }
           if(this.isCountSql(sql))
             countSql = sql;
         } else if(type==='delete'||type==='update'||type==='insert'||type==='explain'){

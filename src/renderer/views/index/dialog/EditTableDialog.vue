@@ -204,9 +204,15 @@ export default {
     },
     methods:{
         handleChangeTableName(){
-            this.editTableNameFlag = true;
-            this.editIndex = '';
-            bacConfig = this.deepClone(this.form);
+            if(this.editIndex !== ''){
+                const hasChange = !this.equals(bacConfig,this.form);
+                if(hasChange){this.$emit('update:form',bacConfig)};
+            }
+            this.$nextTick(()=>{
+                this.editTableNameFlag = true;
+                this.editIndex = '';
+                bacConfig = this.deepClone(this.form);
+            })
         },
         handleChangeTableNameConfirm(){
             const oldTableName = bacConfig.tableName;
@@ -218,7 +224,6 @@ export default {
         handleChangeTableNameCancel(){
             this.editTableNameFlag = false;
             const hasChange = !this.equals(bacConfig,this.form);
-            console.log(hasChange);
             if(hasChange){this.$emit('update:form',bacConfig)};
             bacConfig = {};
         },
@@ -229,8 +234,6 @@ export default {
         handleEditCancel(){
             this.editIndex = '';
             const hasChange = !this.equals(bacConfig,this.form);
-            console.log('cancel',this.form.tableName);
-            console.log('cancel',bacConfig);
             if(hasChange){this.$emit('update:form',bacConfig)};
             bacConfig = {};
         },
