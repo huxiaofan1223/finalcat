@@ -148,7 +148,7 @@ export default {
           monacoInstance:null,
           nowDatabase:"",
           nowTable:"",
-          dbTree:"",
+          dbTree:[],
           tableData: [],
           fields:[],
           loading:false,
@@ -399,14 +399,6 @@ export default {
         });
         return false;
       },
-      renameDatabaseName(oldName,newName){
-        const sql = `
-          CREATE DATABASE new_db_name;
-          RENAME TABLE db_name.table1 TO new_db_name.table1,
-          db_name.table2 TO new_db_name.table2;
-          DROP DATABASE db_name;
-        `
-      },
       contextmenu(event,db,tables) {
         this.$contextmenu({
           items: [
@@ -576,6 +568,10 @@ export default {
           this.$message.success('操作成功');
         })
       },
+      getChildrenByDbName(dbName){
+        const filterItem = this.dbTree.filter(item=>item.Database === dbName);
+        return filterItem[0].children;
+      },
       async handleCreateDatabaseSubmit(form){
         try{
           const editFlag = this.$refs.createDatabaseForm.getEditMode();
@@ -587,7 +583,7 @@ export default {
                 sql = `ALTER DATABASE ${name} COLLATE ${collateVal}`;
               }
             } else {
-              
+              sql = this.renameDatabaseName(bacDatabse.name,name,collateVal);
             }
             await this.pageSelect(sql);
           } else {
@@ -600,6 +596,13 @@ export default {
           console.log(err);
           this.$refs.createDatabaseForm.stopLoading();
         }
+      },
+      renameDatabaseName(oldName,newName,collateVal){
+        const tableArr = this.getChildrenByDbName(oldName);
+        const tableRename = (tableName)=> {return `${oldName}.${tableName} TO ${newName}.${tableName}`};
+        const tableRenames = tableArr.map(item=>tableRename(item));
+        const renameString = tableRenames.join(',\n');
+        return `CREATE DATABASE ${newName} collate ${collateVal};\nRENAME TABLE ${renameString};\nDROP DATABASE ${oldName};`
       },
       handleCreateOptionSubmit(configForm){
           this.$store.dispatch('valideDbConfig',configForm).then(res=>{
@@ -618,7 +621,7 @@ export default {
         if(type !== 'select'){
           this.canDelete = false;
         }
-        if(res.data.hasOwnProperty("fields")){
+        if(type === 'select' && res.data.hasOwnProperty("fields")){
           console.log('tableData',res.data.rows);
           this.tableData = [];
           setTimeout(()=>{
@@ -640,7 +643,7 @@ export default {
             option.database = '';
             this.getDbTree(option);
           }
-          if(res.data.rows.message===''){this.$message.success('操作成功');}
+          if(this.isEmpty(res.data.rows.message)){this.$message.success('操作成功');}
           else {this.$message.success(res.data.rows.message.replace("(",""));}
         }
       },
