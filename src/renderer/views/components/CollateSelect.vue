@@ -11,14 +11,30 @@ export default {
       type:String|null,
       required:true
     },
-    // placeholder:{
-    //   type:String,
-    //   default:''
-    // },
+    charset:{
+      type:String,
+      default:''
+    }
   },
   model: {
     prop: 'value',
     event: 'change'
+  },
+  watch:{
+    charset:{
+      immediate:true,
+      handler(val){
+        if(this.value){
+          return;
+        }
+        if(val===''){
+          return;
+        } else {
+          const filterArr = this.options.filter(item=>item.Charset===val);
+          this.$emit('change',filterArr[0].Collation);
+        }
+      }
+    }
   },
   data(){
     return {

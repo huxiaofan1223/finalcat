@@ -9,7 +9,7 @@
         <el-input size="mini" v-model="form.name" placeholder="数据库名"></el-input>
         </el-form-item>
         <el-form-item label="排序规则" prop="collateVal">
-        <collate-select v-model="form.collateVal"></collate-select>
+            <collate-select v-model="form.collateVal" :charset="form.charset"></collate-select>
         </el-form-item>
     </el-form>
     <span slot="footer" class="dialog-footer">
@@ -24,6 +24,7 @@ import CollateSelect from '../../components/CollateSelect';
 const defaultForm = {
     name:'',
     collateVal:'utf8mb4_general_ci',
+    charset:''
 }
 export default {
     components:{
@@ -41,6 +42,7 @@ export default {
     },
     data(){
         return {
+            editFlag:false,
             loading:false,
             rules:{
                 name: [
@@ -53,6 +55,12 @@ export default {
         }
     },
     methods:{
+        getEditMode(){
+            return this.editFlag;
+        },
+        setEditMode(val){
+            this.editFlag = val;
+        },
         startLoading(){
             this.loading = true;
         },
@@ -63,7 +71,6 @@ export default {
             this.$refs[formName].validate((valid) => {
                 if (valid) {
                     this.loading = true;
-                    console.log(this.form);
                     this.$emit('handleCreateDatabaseSubmit',this.form);
                 }
             })
@@ -73,6 +80,7 @@ export default {
             this.$emit('update:visible',false);
             this.$nextTick(()=>{
                 this.$refs.form.resetFields();
+                this.setEditMode(false);
             })
         }
     }

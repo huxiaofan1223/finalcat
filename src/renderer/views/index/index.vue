@@ -135,6 +135,7 @@ import CreateTableDialog from './dialog/CreateTableDialog';
 import EditTableDialog from './dialog/EditTableDialog';
 import CreateOptionDialog from './dialog/CreateOptionDialog';
 import CreateDatabaseDialog from './dialog/CreateDatabaseDialog';
+let bacDatabse = {};
 export default {
     components:{
       EditTableDialog,
@@ -420,8 +421,19 @@ export default {
             {
               icon: "el-icon-edit",
               label: "修改数据库",
-              onClick: () => {
-                
+              onClick: async() => {
+                // CREATE DATABASE `aaabbbb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+                const sql = `show create database ${db}`;
+                const res = await this.resultSql(sql);
+                const createDetail = res.data.rows[0]['Create Database'];
+                const matchResult = createDetail.match(/ DEFAULT CHARACTER SET (.*?)( COLLATE (.*?))? /);
+                const charset = matchResult[1];
+                const collateVal = matchResult[3];
+                this.createDatabaseVisible = true;
+                const name = db;
+                this.createDatabaseForm = {name,collateVal,charset};
+                bacDatabse = this.deepClone(this.createDatabaseForm);
+                this.$refs.createDatabaseForm.setEditMode(true);
               }
             },
             {
@@ -565,12 +577,23 @@ export default {
         })
       },
       async handleCreateDatabaseSubmit(form){
-        console.log('parent','handleCreateDatabaseSubmit');
-        console.log(form);
         try{
+          const editFlag = this.$refs.createDatabaseForm.getEditMode();
           const {name,collateVal} = form;
-          const sql = `create database ${name} collate ${collateVal}`;
-          await this.pageSelect(sql);
+          let sql = ""
+          if(editFlag){
+            if(this.createDatabaseForm.name === bacDatabse.name){
+              if(this.createDatabaseForm.collateVal!==bacDatabse.collateVal){
+                sql = `ALTER DATABASE ${name} COLLATE ${collateVal}`;
+              }
+            } else {
+              
+            }
+            await this.pageSelect(sql);
+          } else {
+            sql = `create database ${name} collate ${collateVal}`;
+            await this.pageSelect(sql);
+          }
           this.$refs.createDatabaseForm.stopLoading();
           this.$refs.createDatabaseForm.handleClose();
         }catch(err){
