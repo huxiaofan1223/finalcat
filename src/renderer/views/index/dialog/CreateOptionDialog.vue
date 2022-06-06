@@ -47,9 +47,7 @@ export default {
     props:{
         form:{
             type:Object,
-            default:()=>{
-                return this.deepClone(defaultForm)
-            }
+            required:true
         },
         visible:{
             type:Boolean,

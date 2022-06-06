@@ -14,8 +14,9 @@
           :unique-opened="true">
           <el-submenu v-for="(db,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.stop.native="(e)=>{getDbTree(db)}">
             <template slot="title">
-              <span style="margin-left:-15px;">
-                <i @click.stop="handleDelConfig(db)" class="el-icon-delete" style="font-size:13px;color:red;width:20px;margin-right:0;"></i>{{db.name}} 
+              <span style="margin-left:-15px;display:block;" @contextmenu="(e)=>{handleContextOption(e,db)}">
+                <i class="el-icon-menu" style="font-size:13px;width:20px;margin-right:0;"></i>
+                {{db.name}} 
                 <font color="#999999" size="2">
                   {{db.host}}:{{db.port}}
                 </font>
@@ -28,16 +29,19 @@
                   {{item.Database}}
                 </span>
               </template>
-              <el-menu-item v-for="(table,tableIndex) in item.children" :key="tableIndex+''" :index="`${index3}-${index}-${tableIndex}`" @click.stop.native="chooseTable(item.Database,table)">
-                <span style="margin-left:-40px;display:block;" @contextmenu="(e)=>{contextmenuTable(e,item.Database,table)}">
-                  <img src="../../assets/table.png" width="10px">
-                  {{table}}
-                </span>
-              </el-menu-item>
+
+              <div v-if="item.children.length===0" class="center" style="padding:5px 0;">
+                empty
+              </div>
+              <template v-else>
+                <el-menu-item v-for="(table,tableIndex) in item.children" :key="tableIndex+''" :index="`${index3}-${index}-${tableIndex}`" @click.stop.native="chooseTable(item.Database,table)">
+                  <span style="margin-left:-40px;display:block;" @contextmenu="(e)=>{contextmenuTable(e,item.Database,table)}">
+                    <img src="../../assets/table.png" width="10px">
+                    {{table}}
+                  </span>
+                </el-menu-item>
+              </template>
             </el-submenu>
-          <div class="center">
-            <el-button size="mini" type="primary" @click="()=>{newDbConfigDialogVisible = true;}">new db</el-button>
-          </div>
           </el-submenu>
         </el-menu>
       </template>
@@ -92,32 +96,18 @@
         </div>
       </div>
 
-      <el-dialog
-        title="新增数据库"
-        :visible.sync="newDbConfigDialogVisible"
-        width="380px"
-        :before-close="hideNewDbDialog">
-        <el-form :model="newDbForm" :rules="newDbFormRules" ref="newDbForm" size="mini" label-width="80px" label-position="left" class="demo-configForm" @submit.native.prevent @keypress.enter.native="submitNewDbConfig('newDbForm')">
-          <el-form-item label="数据库名" prop="name">
-            <el-input size="mini" v-model="newDbForm.name" placeholder="数据库名"></el-input>
-          </el-form-item>
-          <el-form-item label="排序规则" prop="collateVal">
-            <collate-select v-model="newDbForm.collateVal"></collate-select>
-          </el-form-item>
-        </el-form>
-        <span slot="footer" class="dialog-footer">
-          <el-button @click="hideNewDbDialog" size="mini">取 消</el-button>
-          <el-button type="primary" native-type="submit" @click="submitNewDbConfig('newDbForm')" size="mini" :loading="valideLoading">确 定</el-button>
-        </span>
-      </el-dialog>
-
-
       <CreateOptionDialog
         ref="createOptionForm"
         :form.sync="createOptionForm"
         :visible.sync="configDialogVisible"
         @handleCreateOptionSubmit="handleCreateOptionSubmit"
-        />
+      />
+      <CreateDatabaseDialog
+        ref="createDatabaseForm"
+        :form.sync="createDatabaseForm"
+        :visible.sync="createDatabaseVisible"
+        @handleCreateDatabaseSubmit="handleCreateDatabaseSubmit"
+      />
       <create-table-dialog 
         ref="createTableForm" 
         :form.sync="createTableForm" 
@@ -141,16 +131,16 @@
 <script>
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
-import CollateSelect from '../components/CollateSelect';
 import CreateTableDialog from './dialog/CreateTableDialog';
 import EditTableDialog from './dialog/EditTableDialog';
 import CreateOptionDialog from './dialog/CreateOptionDialog';
+import CreateDatabaseDialog from './dialog/CreateDatabaseDialog';
 export default {
     components:{
-      CollateSelect,
       EditTableDialog,
       CreateTableDialog,
-      CreateOptionDialog
+      CreateOptionDialog,
+      CreateDatabaseDialog
     },
     data(){
         return {
@@ -182,18 +172,10 @@ export default {
           configDialogVisible:false,
           valideLoading:false,
           canDelete:false,
-          newDbConfigDialogVisible:false,
-          newDbForm:{
+          createDatabaseVisible:false,
+          createDatabaseForm:{
             name:'',
             collateVal:'utf8mb4_general_ci',
-          },
-          newDbFormRules:{
-            name: [
-              { required: true, message: '请输入数据库名', trigger: 'blur' },
-            ],
-            collateVal: [
-              { required: true, message: '请选择排序规则', trigger: 'change' },
-            ]
           },
           createTableDialogVisible:false,
           createTableChooseDb:'',
@@ -331,6 +313,39 @@ export default {
         } else {
           return '';
         }
+      },
+      handleContextOption(event,option){
+        this.chooseOption = option;
+        this.$contextmenu({
+          items: [
+            {
+              icon: "el-icon-plus",
+              label: "新建数据库",
+              onClick: () => {
+                this.createDatabaseVisible = true;
+              }
+            },
+            {
+              icon: "el-icon-edit",
+              label: "修改配置",
+              onClick: () => {
+                
+              }
+            },
+            {
+              icon: "el-icon-delete",
+              label: "删除配置",
+              onClick: () => {
+                this.handleDelConfig(option);
+              }
+            }
+          ],
+          event,
+          customClass: "custom-class",
+          zIndex: 3,
+          minWidth:100
+        });
+        return false;
       },
       async contextmenuTable(event,db,table){
         this.$contextmenu({
@@ -549,20 +564,19 @@ export default {
           this.$message.success('操作成功');
         })
       },
-      hideNewDbDialog(){
-        this.$refs['newDbForm'].resetFields();
-        this.newDbConfigDialogVisible = false;
-      },
-      async submitNewDbConfig(formName){
-        this.$refs[formName].validate(async(valid) => {
-          if (valid) {
-            const {name,collateVal} = this.newDbForm;
-            const sql = `create database ${name} collate ${collateVal}`;
-            await this.pageSelect(sql);
-            this.getDbTree(this.chooseOption);
-            this.hideNewDbDialog();
-          }
-        });
+      async handleCreateDatabaseSubmit(form){
+        console.log('parent','handleCreateDatabaseSubmit');
+        console.log(form);
+        try{
+          const {name,collateVal} = form;
+          const sql = `create database ${name} collate ${collateVal}`;
+          await this.pageSelect(sql);
+          this.$refs.createDatabaseForm.stopLoading();
+          this.$refs.createDatabaseForm.handleClose();
+        }catch(err){
+          console.log(err);
+          this.$refs.createDatabaseForm.stopLoading();
+        }
       },
       handleCreateOptionSubmit(configForm){
           this.$store.dispatch('valideDbConfig',configForm).then(res=>{
