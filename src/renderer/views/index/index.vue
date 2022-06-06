@@ -23,7 +23,7 @@
             </template>
             <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.stop.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
-                <span style="margin-left:-30px;display:block;" @contextmenu="(e)=>{contextmenu(e,item.Database)}">
+                <span style="margin-left:-30px;display:block;" @contextmenu="(e)=>{contextmenu(e,item.Database,item.children)}">
                   <img src="../../assets/database.png" width="12px">
                   {{item.Database}}
                 </span>
@@ -111,40 +111,13 @@
         </span>
       </el-dialog>
 
-      <el-dialog
-        title="添加配置"
-        :visible.sync="configDialogVisible"
-        width="380px"
-        :before-close="hideConfigDialog">
-        <el-form :model="configForm" :rules="rules" ref="configForm" size="mini" label-width="55px" label-position="left" class="demo-configForm" @submit.native.prevent @keypress.enter.native="submitConfig('configForm')">
-          <el-form-item label="名称" prop="name">
-            <el-input size="small" v-model="configForm.name" placeholder="名称"></el-input>
-          </el-form-item>
-          <el-row>
-            <el-col :span="14">
-              <el-form-item label="地址" prop="host">
-                <el-input size="small" v-model="configForm.host" placeholder="地址"></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="10">
-              <el-form-item label="端口" prop="port">
-                <el-input size="small" v-model.number="configForm.port" placeholder="端口"></el-input>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-form-item label="账号" prop="user">
-            <el-input size="small" v-model="configForm.user" placeholder="账号"></el-input>
-          </el-form-item>
-          <el-form-item label="密码" prop="password">
-            <el-input size="small" type="password" v-model="configForm.password" placeholder="密码"></el-input>
-          </el-form-item>
-        </el-form>
-        <span slot="footer" class="dialog-footer">
-          <el-button @click="hideConfigDialog" size="mini">取 消</el-button>
-          <el-button type="primary" native-type="submit" @click="submitConfig('configForm')" size="mini" :loading="valideLoading">确 定</el-button>
-        </span>
-      </el-dialog>
 
+      <CreateOptionDialog
+        ref="createOptionForm"
+        :form.sync="createOptionForm"
+        :visible.sync="configDialogVisible"
+        @handleCreateOptionSubmit="handleCreateOptionSubmit"
+        />
       <create-table-dialog 
         ref="createTableForm" 
         :form.sync="createTableForm" 
@@ -171,11 +144,13 @@ import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
 import CollateSelect from '../components/CollateSelect';
 import CreateTableDialog from './dialog/CreateTableDialog';
 import EditTableDialog from './dialog/EditTableDialog';
+import CreateOptionDialog from './dialog/CreateOptionDialog';
 export default {
     components:{
       CollateSelect,
       EditTableDialog,
-      CreateTableDialog
+      CreateTableDialog,
+      CreateOptionDialog
     },
     data(){
         return {
@@ -195,32 +170,16 @@ export default {
           hasLimit:false,
           sql:"",
           hasPrimaryKey:false,
-          configForm: {
+          chooseOption:{},
+          createOptionForm: {
+            name: "",
             host: "",
-            port: "",
+            port: 3306,
             user: "",
             password: "",
             database: ""
           },
-          chooseOption:{},
           configDialogVisible:false,
-          rules: {
-            name: [
-              { required: true, message: '请输入名称', trigger: 'blur' },
-            ],
-            host: [
-              { required: true, message: '请输入地址', trigger: 'blur' },
-            ],
-            port: [
-              { required: true, message: '请输入端口', trigger: 'blur' },
-            ],
-            user: [
-              { required: true, message: '请输入用户名', trigger: 'blur' },
-            ],
-            password: [
-              { required: true, message: '请输入密码', trigger: 'blur' },
-            ],
-          },
           valideLoading:false,
           canDelete:false,
           newDbConfigDialogVisible:false,
@@ -415,7 +374,7 @@ export default {
               onClick: () => {
                 this.handleDelTable(table);
               }
-            },
+            }
           ],
           event,
           customClass: "custom-class",
@@ -424,7 +383,15 @@ export default {
         });
         return false;
       },
-      contextmenu(event,db) {
+      renameDatabaseName(oldName,newName){
+        const sql = `
+          CREATE DATABASE new_db_name;
+          RENAME TABLE db_name.table1 TO new_db_name.table1,
+          db_name.table2 TO new_db_name.table2;
+          DROP DATABASE db_name;
+        `
+      },
+      contextmenu(event,db,tables) {
         this.$contextmenu({
           items: [
             {
@@ -433,6 +400,13 @@ export default {
               onClick: () => {
                 this.createTableChooseDb = db;
                 this.createTableDialogVisible = true;
+              }
+            },
+            {
+              icon: "el-icon-edit",
+              label: "修改数据库",
+              onClick: () => {
+                
               }
             },
             {
@@ -564,7 +538,6 @@ export default {
       },
       showConfigDialog(){
         this.configDialogVisible = true;
-        this.configForm.port = 3306;
       },
       handleDelConfig(config){
         this.$confirm('是否删除此连接？', '提示', {
@@ -580,17 +553,6 @@ export default {
         this.$refs['newDbForm'].resetFields();
         this.newDbConfigDialogVisible = false;
       },
-      hideConfigDialog(){
-        this.$refs['configForm'].resetFields();
-        this.configForm =  {
-          host: "",
-          port: "",
-          user: "",
-          password: "",
-          database: ""
-        };
-        this.configDialogVisible = false;
-      },
       async submitNewDbConfig(formName){
         this.$refs[formName].validate(async(valid) => {
           if (valid) {
@@ -602,26 +564,15 @@ export default {
           }
         });
       },
-      submitConfig(formName){
-        this.$refs[formName].validate((valid) => {
-          if (valid) {
-            if(this.isConfigExist(this.configForm)){
-              this.$message.error('配置已存在');
-              return;
-            }
-            this.valideLoading = true;
-            this.$store.dispatch('valideDbConfig',this.configForm).then(res=>{
-              this.$store.dispatch('addDbConfig',this.configForm);
-              this.$message.success("操作成功");
-              this.configForm = {};
-              this.configDialogVisible = false;
-              this.valideLoading = false;
-            }).catch(err=>{
-              console.log(err);
-              this.valideLoading = false;
-            })
-          }
-        });
+      handleCreateOptionSubmit(configForm){
+          this.$store.dispatch('valideDbConfig',configForm).then(res=>{
+            this.$store.dispatch('addDbConfig',configForm);
+            this.$message.success("操作成功");
+            this.$refs.createOptionForm.stopLoading();
+            this.$refs.createOptionForm.handleClose();
+          }).catch(err=>{
+            this.$refs.createOptionForm.stopLoading();
+          })
       },
       async pageSelect(sql){
         this.monacoInstance.setValue(sql);
@@ -877,15 +828,6 @@ export default {
       },
       isCountSql(sql){
         return /^select count\(.*?\)((?!,).)*? from/i.test(sql);
-      },
-      isConfigExist(config){
-        let temp = this.deepClone(config);
-        delete temp.name;
-        return this.$store.state.Db.dbList.map(item=>{
-          let tempItem = this.deepClone(item);
-          delete tempItem.name;
-          return JSON.stringify(tempItem);
-        }).indexOf(JSON.stringify(temp)) !== -1;
       }
     }
 }

@@ -21,7 +21,7 @@ const mutations = {
 
 const actions = {
   valideDbConfig({ commit },config) {
-    let data = config;
+    const data = config;
     return request.post('/valideconfig',data);
   },
   addDbConfig({ commit },config) {
