@@ -11,13 +11,31 @@
                             <el-input v-model="form.tableName" placeholder="表名" :readonly="!editTableNameFlag"></el-input>
                         </el-form-item>
                     </el-col>
-                    <el-col :span="3">
+                    <el-col :span="2">
                         <el-form-item label="操作">
                             <el-button icon="el-icon-edit" size="mini" circle style="padding:3px;" @click="handleChangeTableName" v-if="!editTableNameFlag"></el-button>
                             <template v-else>
                                 <el-button icon="el-icon-check" size="mini" circle style="padding:3px;" @click="handleChangeTableNameConfirm"></el-button>
                                 <el-button icon="el-icon-close" size="mini" circle style="padding:3px;" @click="handleChangeTableNameCancel"></el-button>
                             </template>
+                        </el-form-item>
+                    </el-col>
+
+                    <el-col :span="4" style="padding-right:10px;">
+                        <el-form-item label="表注释">
+                            <el-input v-model="form.comment" placeholder="表注释"></el-input>
+                        </el-form-item>
+                    </el-col>
+
+                    <el-col :span="4" style="padding-right:10px;">
+                        <el-form-item label="排序规则">
+                            <collate-select v-model="form.collateVal" :charset="form.charset" placeholder="排序规则"></collate-select>
+                        </el-form-item>
+                    </el-col>
+
+                    <el-col :span="4">
+                        <el-form-item label="存储引擎">
+                            <engine-select v-model="form.engine" placeholder="存储引擎"></engine-select>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -125,8 +143,13 @@
 <script>
 import TypeSelect from '../../components/TypeSelect';
 import CollateSelect from '../../components/CollateSelect';
+import EngineSelect from '../../components/EngineSelect';
 const defaultForm = {
     tableName:'',
+    comment:'',
+    charset:'',
+    collateVal:'',
+    engine:'MyISAM',
     fields:[
         {
             key:new Date().getTime(),
@@ -146,7 +169,8 @@ let bacConfig = {};
 export default {
     components:{
         TypeSelect,
-        CollateSelect
+        CollateSelect,
+        EngineSelect
     },
     watch:{
         form:{

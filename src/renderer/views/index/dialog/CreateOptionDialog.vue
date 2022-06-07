@@ -3,8 +3,7 @@
     :title="editFlag?'编辑配置':'新增配置'"
     :visible.sync="visible"
     width="380px"
-    :before-close="handleClose"
-    :close="afterClose">
+    :before-close="handleClose">
     <el-form :model="form" :rules="rules" ref="form" size="mini" label-width="55px" label-position="left" @submit.native.prevent @keypress.enter.native="handleSubmit('form')">
         <el-form-item label="名称" prop="name">
             <el-input size="small" v-model="form.name" placeholder="名称"></el-input>

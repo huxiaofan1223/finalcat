@@ -207,6 +207,10 @@ export default {
           editTableChooseDb:'',
           editTableForm:{
               tableName:'',
+              comment:'',
+              charset:'',
+              collateVal:'',
+              engine:'MyISAM',
               fields:[
                   {
                       key:new Date().getTime(),
@@ -363,7 +367,8 @@ export default {
             {
               icon: "el-icon-edit",
               label: "修改表结构",
-              onClick: () => {
+              onClick: async() => {
+                    const {engine,charset,collateVal} = await this.getCharsetAndCollateByTableName(db,table);
                     this.$refs.editTableForm.startLoading();
                     this.editTableDialogVisible = true;
                     const tableName = table;
@@ -382,7 +387,8 @@ export default {
                           const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT} = item;
                           return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT};
                         })
-                        this.editTableForm = {tableName,fields};
+                        this.editTableForm = {tableName,fields,charset,collateVal,engine};
+                        console.log(this.editTableForm);
                         this.$forceUpdate();
                         this.$refs.editTableForm.stopLoading();
                       }).catch(err=>{
@@ -458,6 +464,17 @@ export default {
         const charset = matchResult[1];
         const collateVal = matchResult[3];
         return {charset,collateVal};
+      },
+      async getCharsetAndCollateByTableName(db,table){
+        // CREATE TABLE `aaaaaa` (`bbb` int(11) NOT NULL) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+        const sql = `show create table ${db}.${table}`;
+        const res = await this.resultSql(sql);
+        const createDetail = res.data.rows[0]['Create Table'];
+        const matchResult = createDetail.match(/\) ENGINE=(.*?) DEFAULT CHARSET=(.*?)( COLLATE=(.*?)$)?$/);
+        const engine = matchResult[1];
+        const charset = matchResult[2];
+        const collateVal = matchResult[4];
+        return {engine,charset,collateVal};
       },
       type2value(dataType){
         if(dataType.indexOf('int')>-1){
@@ -637,12 +654,6 @@ export default {
           }).catch(err=>{
             this.$refs.createOptionForm.stopLoading();
           })
-      },
-      isMultisql(sql){
-        const arr = ['select','insert','delete','update','alter','rename','drop'];
-        const lowReg = arr.map(item=>{return '('+item+')'}).join('|');
-        const reg = new RegExp(`;\n* *[${lowReg}|${lowReg.toUpperCase()}]`);
-        return reg.test(sql);
       },
       async pageSelect(sql){
         this.monacoInstance.setValue(sql);
@@ -899,7 +910,13 @@ export default {
       },
       isCountSql(sql){
         return /^select count\(.*?\)((?!,).)*? from/i.test(sql);
-      }
+      },
+      isMultisql(sql){
+        const arr = ['select','insert','delete','update','alter','rename','drop'];
+        const lowReg = arr.map(item=>{return '('+item+')'}).join('|');
+        const reg = new RegExp(`;\n* *[${lowReg}|${lowReg.toUpperCase()}]`);
+        return reg.test(sql);
+      },
     }
 }
 </script>
