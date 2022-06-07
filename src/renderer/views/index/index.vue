@@ -14,7 +14,7 @@
           :unique-opened="true">
           <el-submenu v-for="(db,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.stop.native="(e)=>{getDbTree(db)}">
             <template slot="title">
-              <span style="margin-left:-15px;display:block;" @contextmenu="(e)=>{handleContextOption(e,db)}">
+              <span style="margin-left:-15px;display:block;" @contextmenu="(e)=>{handleContextOption(e,db,index3)}">
                 <i class="el-icon-menu" style="font-size:13px;width:20px;margin-right:0;"></i>
                 {{db.name}} 
                 <font color="#999999" size="2">
@@ -99,7 +99,7 @@
       <CreateOptionDialog
         ref="createOptionForm"
         :form.sync="createOptionForm"
-        :visible.sync="configDialogVisible"
+        :visible.sync="createOptionVisible"
         @handleCreateOptionSubmit="handleCreateOptionSubmit"
       />
       <CreateDatabaseDialog
@@ -170,12 +170,14 @@ export default {
             password: "",
             database: ""
           },
-          configDialogVisible:false,
+          editOptionIndex:'',
+          createOptionVisible:false,
           valideLoading:false,
           canDelete:false,
           createDatabaseVisible:false,
           createDatabaseForm:{
             name:'',
+            charset:'',
             collateVal:'utf8mb4_general_ci',
           },
           createTableDialogVisible:false,
@@ -315,7 +317,7 @@ export default {
           return '';
         }
       },
-      handleContextOption(event,option){
+      handleContextOption(event,option,index){
         this.chooseOption = option;
         this.$contextmenu({
           items: [
@@ -330,7 +332,10 @@ export default {
               icon: "el-icon-edit",
               label: "修改配置",
               onClick: () => {
-                
+                this.createOptionForm = this.deepClone(option);
+                this.createOptionVisible = true;
+                this.$refs.createOptionForm.setEditMode(true);
+                this.editOptionIndex = index;
               }
             },
             {
@@ -373,7 +378,6 @@ export default {
                           const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT} = item;
                           return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT};
                         })
-                        console.log(fields);
                         this.editTableForm = {tableName,fields};
                         this.$forceUpdate();
                         this.$refs.editTableForm.stopLoading();
@@ -423,7 +427,8 @@ export default {
                 const collateVal = matchResult[3];
                 this.createDatabaseVisible = true;
                 const name = db;
-                this.createDatabaseForm = {name,collateVal,charset};
+                this.createDatabaseForm = this.deepClone({name,collateVal,charset});
+                this.$forceUpdate();
                 bacDatabse = this.deepClone(this.createDatabaseForm);
                 this.$refs.createDatabaseForm.setEditMode(true);
               }
@@ -490,9 +495,6 @@ export default {
           this.pageConfig.total = this.pageConfig.total+1;
         }
       },
-      equalsObj(obj1,obj2){
-        return JSON.stringify(obj1) === JSON.stringify(obj2);
-      },
       async updateCanDelete(){
         let tableArr = Array.from(new Set(this.fields.map(item=>item.table)));
         let dbArr = Array.from(new Set(this.fields.map(item=>item.db)));
@@ -556,7 +558,7 @@ export default {
         this.$forceUpdate();
       },
       showConfigDialog(){
-        this.configDialogVisible = true;
+        this.createOptionVisible = true;
       },
       handleDelConfig(config){
         this.$confirm('是否删除此连接？', '提示', {
@@ -578,14 +580,16 @@ export default {
           const {name,collateVal} = form;
           let sql = ""
           if(editFlag){
-            if(this.createDatabaseForm.name === bacDatabse.name){
-              if(this.createDatabaseForm.collateVal!==bacDatabse.collateVal){
-                sql = `ALTER DATABASE ${name} COLLATE ${collateVal}`;
+            if(!this.equals(this.createDatabaseForm,bacDatabse)){
+              if(this.createDatabaseForm.name === bacDatabse.name){
+                if(this.createDatabaseForm.collateVal!==bacDatabse.collateVal){
+                  sql = `ALTER DATABASE ${name} COLLATE ${collateVal}`;
+                }
+              } else {
+                sql = this.renameDatabaseName(bacDatabse.name,name,collateVal);
               }
-            } else {
-              sql = this.renameDatabaseName(bacDatabse.name,name,collateVal);
+              await this.pageSelect(sql);
             }
-            await this.pageSelect(sql);
           } else {
             sql = `create database ${name} collate ${collateVal}`;
             await this.pageSelect(sql);
@@ -602,11 +606,20 @@ export default {
         const tableRename = (tableName)=> {return `${oldName}.${tableName} TO ${newName}.${tableName}`};
         const tableRenames = tableArr.map(item=>tableRename(item));
         const renameString = tableRenames.join(',\n');
+        if(tableArr.length===0){
+          return `CREATE DATABASE ${newName} collate ${collateVal};\nDROP DATABASE ${oldName};`
+        } 
         return `CREATE DATABASE ${newName} collate ${collateVal};\nRENAME TABLE ${renameString};\nDROP DATABASE ${oldName};`
       },
       handleCreateOptionSubmit(configForm){
+          const flag = this.$refs.createOptionForm.getEditMode();
           this.$store.dispatch('valideDbConfig',configForm).then(res=>{
-            this.$store.dispatch('addDbConfig',configForm);
+            if(!flag){
+              this.$store.dispatch('addDbConfig',configForm);
+            } else {
+              if(!this.isEmpty(this.editOptionIndex))
+                this.$store.dispatch('changeConfig',configForm,this.editOptionIndex);
+            }
             this.$message.success("操作成功");
             this.$refs.createOptionForm.stopLoading();
             this.$refs.createOptionForm.handleClose();
@@ -632,7 +645,7 @@ export default {
             delete item.COLUMN_COMMENT;
             delete item.COLUMN_TYPE;
           })
-          if(!this.equalsObj(equalFieldsArr,res.data.fields)){
+          if(!this.equals(equalFieldsArr,res.data.fields)){
             this.fields = res.data.fields;
           }
           if(type === 'select')

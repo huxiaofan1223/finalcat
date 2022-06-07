@@ -14,6 +14,9 @@ const mutations = {
       state.dbList.splice(index,1);
     }
   },
+  CHANGE_DB_CONFIG(state,config,index){
+    state.dbList.splice(index,1,config);
+  },
   CLEAR_DB_CONFIG (state) {
     state.dbList = []
   },
@@ -32,6 +35,9 @@ const actions = {
   },
   clearDbList({commit}){
     commit('CLEAR_DB_CONFIG');
+  },
+  changeConfig({commit},config,index){
+    commit('CHANGE_DB_CONFIG',config,index);
   }
 }
 

@@ -1,6 +1,6 @@
 <template>
     <el-dialog
-    title="添加配置"
+    :title="editFlag?'编辑配置':'新增配置'"
     :visible.sync="visible"
     width="380px"
     :before-close="handleClose">
@@ -73,10 +73,17 @@ export default {
                 password: [
                 { required: true, message: '请输入密码', trigger: 'blur' },
                 ],
-            }
+            },
+            editFlag:false
         }
     },
     methods:{
+        getEditMode(){
+            return this.editFlag;
+        },
+        setEditMode(val){
+            this.editFlag = val;
+        },
         startLoading(){
             this.loading = true;
         },
@@ -86,21 +93,25 @@ export default {
         handleSubmit(formName){
             this.$refs[formName].validate((valid) => {
                 if (valid) {
-                    if(this.isConfigExist(this.form)){
-                        this.$message.error('配置已存在');
-                        return;
+                    if(!this.editFlag){
+                        if(this.isConfigExist(this.form)){
+                            this.$message.error('配置已存在');
+                            return;
+                        }
+                        this.loading = true;
+                        this.$emit('handleCreateOptionSubmit',this.form);
+                    } else {
+                        this.loading = true;
+                        this.$emit('handleCreateOptionSubmit',this.form);
                     }
-                    this.loading = true;
-                    this.$emit('handleCreateOptionSubmit',this.form);
                 }
             })
         },
         handleClose(){
-            this.$emit('update:form',this.deepClone(defaultForm));
+            const form = this.deepClone(defaultForm);
+            this.$emit('update:form',form);
             this.$emit('update:visible',false);
-            this.$nextTick(()=>{
-                this.$refs.form.resetFields();
-            })
+            this.editFlag = false;
         },
         isConfigExist(config){
             let temp = this.deepClone(config);

@@ -17,17 +17,16 @@ Vue.config.productionTip = false
 const deepClone = (a) => {
   return JSON.parse(JSON.stringify(a));
 }
-
 const equals = (a,b) => {
   return JSON.stringify(a) === JSON.stringify(b);
 }
-Vue.prototype.equals = equals;
-Vue.prototype.deepClone = deepClone;
 
 const isEmpty = (a) => {
   return a===''||a===undefined||a===null;
 }
 
+Vue.prototype.equals = equals;
+Vue.prototype.deepClone = deepClone;
 Vue.prototype.isEmpty = isEmpty;
 
 new Vue({

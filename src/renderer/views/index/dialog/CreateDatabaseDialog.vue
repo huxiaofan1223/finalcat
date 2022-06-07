@@ -1,6 +1,6 @@
 <template>
     <el-dialog
-    title="新增数据库"
+    :title="editFlag?'编辑数据库':'新建数据库'"
     :visible.sync="visible"
     width="380px"
     :before-close="handleClose">
@@ -76,12 +76,10 @@ export default {
             })
         },
         handleClose(){
-            this.$emit('update:form',this.deepClone(defaultForm));
+            const form = this.deepClone(defaultForm);
+            this.$emit('update:form',form);
             this.$emit('update:visible',false);
-            this.$nextTick(()=>{
-                this.$refs.form.resetFields();
-                this.setEditMode(false);
-            })
+            this.setEditMode(false);
         }
     }
 }

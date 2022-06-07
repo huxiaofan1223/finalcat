@@ -27,7 +27,7 @@ export default {
         if(this.value){
           return;
         }
-        if(val===''){
+        if(this.isEmpty(val)){
           return;
         } else {
           const filterArr = this.options.filter(item=>item.Charset===val);
