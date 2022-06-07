@@ -3,7 +3,8 @@
     :title="editFlag?'编辑配置':'新增配置'"
     :visible.sync="visible"
     width="380px"
-    :before-close="handleClose">
+    :before-close="handleClose"
+    :close="afterClose">
     <el-form :model="form" :rules="rules" ref="form" size="mini" label-width="55px" label-position="left" @submit.native.prevent @keypress.enter.native="handleSubmit('form')">
         <el-form-item label="名称" prop="name">
             <el-input size="small" v-model="form.name" placeholder="名称"></el-input>
@@ -72,7 +73,7 @@ export default {
                 ],
                 password: [
                 { required: true, message: '请输入密码', trigger: 'blur' },
-                ],
+                ]
             },
             editFlag:false
         }
@@ -108,10 +109,13 @@ export default {
             })
         },
         handleClose(){
-            const form = this.deepClone(defaultForm);
-            this.$emit('update:form',form);
-            this.$emit('update:visible',false);
-            this.editFlag = false;
+            this.$refs.form.resetFields();
+            this.$nextTick(()=>{
+                const form = this.deepClone(defaultForm);
+                this.$emit('update:form',form);
+                this.$emit('update:visible',false);
+                this.editFlag = false;
+            })
         },
         isConfigExist(config){
             let temp = this.deepClone(config);

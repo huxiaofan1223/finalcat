@@ -184,6 +184,10 @@ export default {
           createTableChooseDb:'',
           createTableForm:{
               tableName:'',
+              comment:'',
+              charset:'',
+              collateVal:'',
+              engine:'MyISAM',
               fields:[
                   {
                       key:new Date().getTime(),
@@ -409,22 +413,19 @@ export default {
             {
               icon: "el-icon-plus",
               label: "新建表",
-              onClick: () => {
+              onClick: async() => {
                 this.createTableChooseDb = db;
                 this.createTableDialogVisible = true;
+                const {charset,collateVal} = await this.getCharsetAndCollateByDbName(db);
+                this.createTableForm.charset = charset;
+                this.createTableForm.collateVal = collateVal;
               }
             },
             {
               icon: "el-icon-edit",
               label: "修改数据库",
               onClick: async() => {
-                // CREATE DATABASE `aaabbbb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
-                const sql = `show create database ${db}`;
-                const res = await this.resultSql(sql);
-                const createDetail = res.data.rows[0]['Create Database'];
-                const matchResult = createDetail.match(/ DEFAULT CHARACTER SET (.*?)( COLLATE (.*?))? /);
-                const charset = matchResult[1];
-                const collateVal = matchResult[3];
+                const {charset,collateVal} = await this.getCharsetAndCollateByDbName(db);
                 this.createDatabaseVisible = true;
                 const name = db;
                 this.createDatabaseForm = this.deepClone({name,collateVal,charset});
@@ -447,6 +448,16 @@ export default {
           minWidth:100
         });
         return false;
+      },
+      async getCharsetAndCollateByDbName(db){
+        // CREATE DATABASE `aaabbbb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+        const sql = `show create database ${db}`;
+        const res = await this.resultSql(sql);
+        const createDetail = res.data.rows[0]['Create Database'];
+        const matchResult = createDetail.match(/ DEFAULT CHARACTER SET (.*?)( COLLATE (.*?))? /);
+        const charset = matchResult[1];
+        const collateVal = matchResult[3];
+        return {charset,collateVal};
       },
       type2value(dataType){
         if(dataType.indexOf('int')>-1){
@@ -627,6 +638,12 @@ export default {
             this.$refs.createOptionForm.stopLoading();
           })
       },
+      isMultisql(sql){
+        const arr = ['select','insert','delete','update','alter','rename','drop'];
+        const lowReg = arr.map(item=>{return '('+item+')'}).join('|');
+        const reg = new RegExp(`;\n* *[${lowReg}|${lowReg.toUpperCase()}]`);
+        return reg.test(sql);
+      },
       async pageSelect(sql){
         this.monacoInstance.setValue(sql);
         const type = this.getSqlType(sql);
@@ -634,7 +651,8 @@ export default {
         if(type !== 'select'){
           this.canDelete = false;
         }
-        if(type === 'select' && res.data.hasOwnProperty("fields")){
+        const isMultisql = this.isMultisql(sql);
+        if(!isMultisql&&res.data.hasOwnProperty("fields")){
           console.log('tableData',res.data.rows);
           this.tableData = [];
           setTimeout(()=>{

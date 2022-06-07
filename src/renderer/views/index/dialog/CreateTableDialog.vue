@@ -6,9 +6,27 @@
         :before-close="handleClose">
             <el-form class="form" size="mini" label-position="top" :model="form" :rules="rules" ref="form" v-loading="loading" element-loading-text="loading...">
                 <el-row>
-                    <el-col :span="4">
+                    <el-col :span="4" style="padding-right:10px;">
                         <el-form-item label="表名" prop="tableName">
                             <el-input v-model="form.tableName" placeholder="表名"></el-input>
+                        </el-form-item>
+                    </el-col>
+
+                    <el-col :span="4" style="padding-right:10px;">
+                        <el-form-item label="表注释">
+                            <el-input v-model="form.comment" placeholder="表注释"></el-input>
+                        </el-form-item>
+                    </el-col>
+
+                    <el-col :span="4" style="padding-right:10px;">
+                        <el-form-item label="排序规则">
+                            <collate-select v-model="form.collateVal" :charset="form.charset" placeholder="排序规则"></collate-select>
+                        </el-form-item>
+                    </el-col>
+
+                    <el-col :span="4">
+                        <el-form-item label="存储引擎">
+                            <engine-select v-model="form.engine" placeholder="存储引擎"></engine-select>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -106,8 +124,13 @@
 <script>
 import TypeSelect from '../../components/TypeSelect';
 import CollateSelect from '../../components/CollateSelect';
+import EngineSelect from '../../components/EngineSelect';
 const defaultForm = {
     tableName:'',
+    comment:'',
+    charset:'',
+    collateVal:'',
+    engine:'MyISAM',
     fields:[
         {
             key:new Date().getTime(),
@@ -126,7 +149,8 @@ const defaultForm = {
 export default {
     components:{
         TypeSelect,
-        CollateSelect
+        CollateSelect,
+        EngineSelect
     },
     props:{
         form:{
@@ -215,7 +239,10 @@ export default {
             const fieldString = form.fields.map(item=>this.item2Field(item)).join(',');
             const primaryString = this.getPrimaryString(form.fields);
             const db = this.createTableChooseDb;
-            return `CREATE TABLE ${db}.${tableName} (${fieldString} ${primaryString})`;
+            const engine = `ENGINE = ${this.form.engine } `;
+            const collate = this.isEmpty(this.form.collateVal)?'':`COLLATE ${this.form.collateVal} `;
+            const comment = this.isEmpty(this.form.comment)?'':`COMMENT = '${this.form.comment}'`;
+            return `CREATE TABLE ${db}.${tableName} (${fieldString} ${primaryString}) ${engine}${collate}${comment}`;
         },
         handleSee(){
             this.$refs['form'].validate((valid) => {

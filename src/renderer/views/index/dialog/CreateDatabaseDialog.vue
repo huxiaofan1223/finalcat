@@ -76,10 +76,13 @@ export default {
             })
         },
         handleClose(){
-            const form = this.deepClone(defaultForm);
-            this.$emit('update:form',form);
-            this.$emit('update:visible',false);
-            this.setEditMode(false);
+            this.$refs.form.resetFields();
+            this.$nextTick(()=>{
+                const form = this.deepClone(defaultForm);
+                this.$emit('update:form',form);
+                this.$emit('update:visible',false);
+                this.setEditMode(false);
+            })
         }
     }
 }
