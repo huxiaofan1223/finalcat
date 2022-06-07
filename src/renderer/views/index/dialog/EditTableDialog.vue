@@ -23,19 +23,19 @@
 
                     <el-col :span="4" style="padding-right:10px;">
                         <el-form-item label="表注释">
-                            <el-input v-model="form.comment" placeholder="表注释"></el-input>
+                            <el-input v-model="form.comment" placeholder="表注释" @blur="handleCommentChange"></el-input>
                         </el-form-item>
                     </el-col>
 
                     <el-col :span="4" style="padding-right:10px;">
                         <el-form-item label="排序规则">
-                            <collate-select v-model="form.collateVal" :charset="form.charset" placeholder="排序规则"></collate-select>
+                            <collate-select v-model="form.collateVal" :charset="form.charset" placeholder="排序规则" @change="handleCollateChange"></collate-select>
                         </el-form-item>
                     </el-col>
 
                     <el-col :span="4">
                         <el-form-item label="存储引擎">
-                            <engine-select v-model="form.engine" placeholder="存储引擎"></engine-select>
+                            <engine-select v-model="form.engine" placeholder="存储引擎" @change="handleEngineChange"></engine-select>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -225,6 +225,24 @@ export default {
         }
     },
     methods:{
+        handleCommentChange(){
+            const table = this.form.tableName;
+            const db = this.createTableChooseDb;
+            const sql = `ALTER TABLE ${db}.${table} COMMENT = '${this.form.comment}'`;
+            this.$emit('handleChangeColumn',sql);
+        },
+        handleCollateChange(val){
+            const table = this.form.tableName;
+            const db = this.createTableChooseDb;
+            const sql = `ALTER TABLE ${db}.${table} COLLATE ${val}`;
+            this.$emit('handleChangeColumn',sql);
+        },
+        handleEngineChange(val){
+            const table = this.form.tableName;
+            const db = this.createTableChooseDb;
+            const sql = `ALTER TABLE ${db}.${table} ENGINE = ${val}`;
+            this.$emit('handleChangeColumn',sql);
+        },
         handleChangeTableName(){
             if(this.editIndex !== ''){
                 const hasChange = !this.equals(bacConfig,this.form);

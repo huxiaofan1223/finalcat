@@ -368,7 +368,7 @@ export default {
               icon: "el-icon-edit",
               label: "修改表结构",
               onClick: async() => {
-                    const {engine,charset,collateVal} = await this.getCharsetAndCollateByTableName(db,table);
+                    const {engine,charset,collateVal,comment} = await this.getCharsetAndCollateByTableName(db,table);
                     this.$refs.editTableForm.startLoading();
                     this.editTableDialogVisible = true;
                     const tableName = table;
@@ -387,7 +387,7 @@ export default {
                           const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT} = item;
                           return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT};
                         })
-                        this.editTableForm = {tableName,fields,charset,collateVal,engine};
+                        this.editTableForm = {tableName,fields,charset,collateVal,engine,comment};
                         console.log(this.editTableForm);
                         this.$forceUpdate();
                         this.$refs.editTableForm.stopLoading();
@@ -470,11 +470,14 @@ export default {
         const sql = `show create table ${db}.${table}`;
         const res = await this.resultSql(sql);
         const createDetail = res.data.rows[0]['Create Table'];
-        const matchResult = createDetail.match(/\) ENGINE=(.*?) DEFAULT CHARSET=(.*?)( COLLATE=(.*?)$)?$/);
+        console.log(createDetail);
+        const matchResult = createDetail.match(/\) ENGINE=(.*?)( AUTO_INCREMENT=\d+)? DEFAULT CHARSET=(.*?)( COLLATE=(.*?))?( COMMENT='(.*)'$)?$/);
+        console.log(matchResult);
         const engine = matchResult[1];
-        const charset = matchResult[2];
-        const collateVal = matchResult[4];
-        return {engine,charset,collateVal};
+        const charset = matchResult[3];
+        const collateVal = matchResult[5];
+        const comment = matchResult[7]||'';
+        return {engine,charset,collateVal,comment};
       },
       type2value(dataType){
         if(dataType.indexOf('int')>-1){
