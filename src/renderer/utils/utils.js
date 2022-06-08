@@ -273,3 +273,10 @@ export const msgSuccess = (msgObj) => {
 export const formatVal = (val) => {
     return '`'+val+'`'
 }
+
+// '=>\'
+// \=>\\
+
+export const escape = (val) => {
+    return val.replace(/['\\]/g,(match)=>{return `\\${match}`});
+}

@@ -820,8 +820,10 @@ export default {
       },
       async handleUpdate(key,value,row){
         try{
-          let primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
-          let sql = `update ${this.nowDatabase}.${this.nowTable} set ${key} = '${value}' where ${primaryKey} = ${row[primaryKey]}`;
+          const db = this.nowDatabase;
+          const table = this.nowTable;
+          let primaryKey = await this.getPrimaryKey(db,table);
+          let sql = `update ${this.formatVal(db)}.${this.formatVal(table)} set ${this.formatVal(key)} = '${this.escape(value)}' where ${primaryKey} = ${row[primaryKey]}`;
           let updateRes = await this.resultSql(sql);
           this.monacoInstance.setValue(sql);
           this.msgSuccess(updateRes.data.rows);
