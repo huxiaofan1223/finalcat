@@ -1,13 +1,14 @@
+import { Message } from "element-ui";
 export const deepClone = (a) => {
     return JSON.parse(JSON.stringify(a));
-  }
+}
 export const equals = (a,b) => {
     return JSON.stringify(a) === JSON.stringify(b);
 }
 export const isEmpty = (a) => {
-    return a===''||a===undefined||a===null;
+    return a === '' || a === undefined || a === null;
 }
-export const collateArr = [
+export const CollateOptions = [
     {"Collation":"big5_chinese_ci","Charset":"big5","Id":1,"Default":"Yes","Compiled":"Yes","Sortlen":1},
     {"Collation":"big5_bin","Charset":"big5","Id":84,"Default":"","Compiled":"Yes","Sortlen":1},
     {"Collation":"dec8_swedish_ci","Charset":"dec8","Id":3,"Default":"Yes","Compiled":"Yes","Sortlen":1},
@@ -232,10 +233,9 @@ export const collateArr = [
     {"Collation":"gb18030_unicode_520_ci","Charset":"gb18030","Id":250,"Default":"","Compiled":"Yes","Sortlen":8}
 ]
 export const getDefaultCollateByCharset = (charset)=>{
-    const filterArr = collateArr.filter(item=>item.Charset===charset);
+    const filterArr = CollateOptions.filter(item=>item.Charset===charset);
     return filterArr[0].Collation;
 }
-
 
 export const isLimitSql = (sql)=>{
     return /.*limit.*?\d+$/i.test(sql);
@@ -250,7 +250,6 @@ export const isMultisql = (sql)=>{
     return reg.test(sql);
 }
 
-import { Message } from "element-ui";
 export const msgSuccess = (msgObj) => {
     let msgHTML = '';
     if(typeof msgObj === 'object' && !Array.isArray(msgObj)){
@@ -276,7 +275,6 @@ export const formatVal = (val) => {
 
 // '=>\'
 // \=>\\
-
 export const escape = (val) => {
     return val.replace(/['\\]/g,(match)=>{return `\\${match}`});
 }

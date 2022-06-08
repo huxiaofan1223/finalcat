@@ -387,7 +387,7 @@ export default {
                     this.editTableDialogVisible = true;
                     const tableName = table;
                     this.editTableChooseDb = db;
-                    setTimeout(()=>{
+                    // setTimeout(()=>{
                       this.getFields(db,table).then(columns=>{
                         columns.forEach((field,index)=>{
                           field.key = index;
@@ -401,14 +401,18 @@ export default {
                           const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT} = item;
                           return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT};
                         })
+                        const before = Date.now();
                         this.editTableForm = {tableName,fields,charset,collateVal,engine,comment};
+                        this.$nextTick(()=>{
+                          console.log(Date.now()-before);
+                        })
                         this.$forceUpdate();
                         this.$refs.editTableForm.stopLoading();
                       }).catch(err=>{
                         console.log('getFieldsError',err);
                         this.$refs.editTableForm.stopLoading();
                       })
-                    },100)
+                    // },100)
               }
             },
             {
