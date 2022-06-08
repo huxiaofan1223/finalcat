@@ -113,7 +113,7 @@
     border-radius: 4px;
     background-color: #999999;
   }
-  .el-table--scrollable-x .el-table__body-wrapper{
-    overflow-y:auto;
+  .el-table__body-wrapper{
+    overflow:auto!important;
   }
 </style>

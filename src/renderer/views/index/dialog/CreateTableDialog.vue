@@ -196,20 +196,21 @@ export default {
             this.$emit('update:form',form);
         },
         item2Field(field){
-            const extra = this.isEmpty(field.EXTRA)?'':field.EXTRA;
+            const extra = this.isEmpty(field.EXTRA)?'':' '+field.EXTRA;
             const length = this.isEmpty(field.length) ? '':`(${field.length})`;
-            const nullable = field.IS_NULLABLE==='YES'?'NULL':'NOT NULL';
-            let defaultVal = this.isEmpty(field.COLUMN_DEFAULT)?'':`DEFAULT '${field.COLUMN_DEFAULT}'`;
-            const collateVal = this.isEmpty(field.COLLATION_NAME)?'':`COLLATE ${field.COLLATION_NAME}`;
-            const ai = field.AI?'AUTO_INCREMENT':'';
-            const comment = this.isEmpty(field.COLUMN_COMMENT)?'':`COMMENT '${field.COLUMN_COMMENT}'`;
-            if(field.COLUMN_DEFAULT === 'CURRENT_TIMESTAMP') defaultVal='DEFAULT CURRENT_TIMESTAMP';
-            return `${field.COLUMN_NAME} ${field.DATA_TYPE}${length} ${extra} ${collateVal} ${nullable} ${defaultVal} ${ai} ${comment}`;
+            const nullable = field.IS_NULLABLE==='YES'?' NULL':' NOT NULL';
+            let defaultVal = this.isEmpty(field.COLUMN_DEFAULT)?'':` DEFAULT '${field.COLUMN_DEFAULT}'`;
+            const collateVal = this.isEmpty(field.COLLATION_NAME)?'':` COLLATE ${field.COLLATION_NAME}`;
+            const ai = field.AI?' AUTO_INCREMENT':'';
+            const comment = this.isEmpty(field.COLUMN_COMMENT)?'':` COMMENT '${field.COLUMN_COMMENT}'`;
+            if(field.COLUMN_DEFAULT === 'CURRENT_TIMESTAMP') defaultVal=' DEFAULT CURRENT_TIMESTAMP';
+            console.log(field.COLUMN_NAME,`${this.formatVal(field.COLUMN_NAME)} ${field.DATA_TYPE}${length}${extra}${collateVal}${nullable}${defaultVal}${ai}${comment}`)
+            return `${this.formatVal(field.COLUMN_NAME)} ${field.DATA_TYPE}${length}${extra}${collateVal}${nullable}${defaultVal}${ai}${comment}`;
         },
         getPrimaryString(fields){
-            const primaryArr = fields.filter(item=>item.AI).map(item=>"`"+item.COLUMN_NAME+"`");
+            const primaryArr = fields.filter(item=>item.AI).map(item=>this.formatVal(item.COLUMN_NAME));
             if(primaryArr.length)
-                return `,PRIMARY KEY (${primaryArr.join(',')})`;
+                return `,\nPRIMARY KEY (${primaryArr.join(',')})`;
             else
                 return ''
         },
@@ -220,10 +221,13 @@ export default {
             this.loading = false;
         },
         handleClose(){
-            this.loading = false;
-            const form = this.deepClone(defaultForm);
-            this.$emit('update:form',form);
-            this.$emit('update:createTableDialogVisible',false);
+            this.$refs.form.resetFields();
+            this.$nextTick(()=>{
+                this.loading = false;
+                const form = this.deepClone(defaultForm);
+                this.$emit('update:form',form);
+                this.$emit('update:createTableDialogVisible',false);
+            })
         },
         handleSubmit(){
             this.$refs['form'].validate((valid) => {
@@ -236,23 +240,23 @@ export default {
         },
         form2Sql(form){
             const tableName = form.tableName;
-            const fieldString = form.fields.map(item=>this.item2Field(item)).join(',');
+            const fieldString = form.fields.map(item=>this.item2Field(item)).join(',\n');
             const primaryString = this.getPrimaryString(form.fields);
             const db = this.createTableChooseDb;
             const engine = `ENGINE = ${this.form.engine } `;
             const collate = this.isEmpty(this.form.collateVal)?'':`COLLATE ${this.form.collateVal} `;
             const comment = this.isEmpty(this.form.comment)?'':`COMMENT = '${this.form.comment}'`;
-            return `CREATE TABLE ${db}.${tableName} (${fieldString} ${primaryString}) ${engine}${collate}${comment}`;
+            return `CREATE TABLE ${this.formatVal(db)}.${this.formatVal(tableName)} (\n${fieldString}${primaryString}\n) ${engine}${collate}${comment}`;
         },
         handleSee(){
             this.$refs['form'].validate((valid) => {
                 if (valid) {
-                    const sql = this.form2Sql(this.form);
-                    this.$notify({
-                        title: 'sql预览',
-                        message:sql,
-                        duration: 0
-                    });
+                    const code = this.form2Sql(this.form);
+                    this.$SqlShowDialog({
+                        title: `新建表SQL`,
+                        coexist: false,
+                        code
+                    })
                 }
             });
         },

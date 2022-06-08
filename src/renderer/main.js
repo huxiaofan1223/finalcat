@@ -14,20 +14,28 @@ if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.prototype.$http = request;
 Vue.config.productionTip = false
 
-const deepClone = (a) => {
-  return JSON.parse(JSON.stringify(a));
-}
-const equals = (a,b) => {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-
-const isEmpty = (a) => {
-  return a===''||a===undefined||a===null;
-}
+import {equals,deepClone,isEmpty,getDefaultCollateByCharset,isCountSql,isLimitSql,isMultisql,msgSuccess,formatVal} from './utils/utils'
 
 Vue.prototype.equals = equals;
 Vue.prototype.deepClone = deepClone;
 Vue.prototype.isEmpty = isEmpty;
+Vue.prototype.getDefaultCollateByCharset = getDefaultCollateByCharset;
+Vue.prototype.isCountSql = isCountSql;
+Vue.prototype.isLimitSql = isLimitSql;
+Vue.prototype.isMultisql = isMultisql;
+Vue.prototype.msgSuccess = msgSuccess;
+Vue.prototype.formatVal = formatVal;
+
+import SqlShowDialog from './views/index/dialog/SqlShowDialog';
+Vue.prototype.$SqlShowDialog = SqlShowDialog.install;
+
+import hljs from 'highlight.js';
+import 'highlight.js/styles/atom-one-light.css';
+
+Vue.directive('highlight',function (el) {
+    const blocks = el.querySelectorAll('pre code');
+    blocks.forEach((block)=>{hljs.highlightBlock(block)})
+})
 
 new Vue({
   components: { App },

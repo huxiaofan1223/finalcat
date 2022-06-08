@@ -16,6 +16,10 @@ export default {
       default:''
     }
   },
+  model: {
+    prop: 'value',
+    event: 'change'
+  },
   data(){
     return {
       options:['InnoDB','MRG_MYISAM','MEMORY','BLACKHOLE','MyISAM','CSV','ARCHIVE']
@@ -23,7 +27,7 @@ export default {
   },
   methods:{
     handleChange(val){
-      this.$emit('input',val);
+      this.$emit('change',val);
     }
   }
 }

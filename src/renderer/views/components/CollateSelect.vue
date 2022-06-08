@@ -1,5 +1,5 @@
 <template>
-  <el-select :value="value" @change="handleChange" style="width:100%;" v-bind="$attrs">
+  <el-select :value="value" @change="handleChange" style="width:100%;" v-bind="$attrs" filterable>
     <el-option v-for="option in options" :key="option.Collation" :value="option.Collation" :label="option.Collation"></el-option>
   </el-select>
 </template>

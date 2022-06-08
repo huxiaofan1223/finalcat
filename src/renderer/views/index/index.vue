@@ -67,7 +67,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column :min-width="`${item.name} ${item.COLUMN_TYPE}`.length*8" v-for="(item,index) in fields" :key="`${item.db}-${item.table}-${item.name}`">
+            <el-table-column v-for="(item,index) in fields" :key="`${item.db}-${item.table}-${item.name}`">
               <template #header>
                 {{fields[index].name}}
                 <font color="#555555">{{fields[index].COLUMN_TYPE}}</font>
@@ -82,7 +82,7 @@
 
         <div class="between" style="padding:10px;">
           <div>
-            <el-button type="primary" size="small" @click="handleInsert">新增</el-button>
+            <el-button type="primary" size="small" @click="handleInsert" v-if="canDelete">新增</el-button>
           </div>
           <el-pagination
             @size-change="handleSizeChange"
@@ -365,6 +365,20 @@ export default {
         this.$contextmenu({
           items: [
             {
+              icon: "el-icon-s-operation",
+              label: "查看表结构",
+              onClick: async() => {
+                const sql = `show create table ${db}.${table}`;
+                const res = await this.resultSql(sql);
+                const code = res.data.rows[0]['Create Table'];
+                this.$SqlShowDialog({
+                  title: `${db}.${table} 表结构`,
+                  coexist: false,
+                  code
+                })
+              }
+            },
+            {
               icon: "el-icon-edit",
               label: "修改表结构",
               onClick: async() => {
@@ -388,7 +402,6 @@ export default {
                           return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT};
                         })
                         this.editTableForm = {tableName,fields,charset,collateVal,engine,comment};
-                        console.log(this.editTableForm);
                         this.$forceUpdate();
                         this.$refs.editTableForm.stopLoading();
                       }).catch(err=>{
@@ -428,6 +441,20 @@ export default {
               }
             },
             {
+              icon: "el-icon-s-operation",
+              label: "查看数据库结构",
+              onClick: async() => {
+                const sql = `show create database ${db}`;
+                const res = await this.resultSql(sql);
+                const code = res.data.rows[0]['Create Database'];
+                this.$SqlShowDialog({
+                  title: `${db} 数据库结构`,
+                  coexist: false,
+                  code
+                })
+              }
+            },
+            {
               icon: "el-icon-edit",
               label: "修改数据库",
               onClick: async() => {
@@ -462,7 +489,7 @@ export default {
         const createDetail = res.data.rows[0]['Create Database'];
         const matchResult = createDetail.match(/ DEFAULT CHARACTER SET (.*?)( COLLATE (.*?))? /);
         const charset = matchResult[1];
-        const collateVal = matchResult[3];
+        const collateVal = matchResult[3]||this.getDefaultCollateByCharset(charset);
         return {charset,collateVal};
       },
       async getCharsetAndCollateByTableName(db,table){
@@ -470,13 +497,12 @@ export default {
         const sql = `show create table ${db}.${table}`;
         const res = await this.resultSql(sql);
         const createDetail = res.data.rows[0]['Create Table'];
-        console.log(createDetail);
         const matchResult = createDetail.match(/\) ENGINE=(.*?)( AUTO_INCREMENT=\d+)? DEFAULT CHARSET=(.*?)( COLLATE=(.*?))?( COMMENT='(.*)'$)?$/);
-        console.log(matchResult);
         const engine = matchResult[1];
         const charset = matchResult[3];
-        const collateVal = matchResult[5];
+        const collateVal = matchResult[5]||this.getDefaultCollateByCharset(charset);
         const comment = matchResult[7]||'';
+        console.log({engine,charset,collateVal,comment});
         return {engine,charset,collateVal,comment};
       },
       type2value(dataType){
@@ -510,7 +536,8 @@ export default {
         const insertSql = `INSERT INTO ${nowDatabase}.${nowTable} VALUES (${values})`;
         const newSql = insertSql.replace(/,"CURRENT_TIMESTAMP"/g,',CURRENT_TIMESTAMP');
         const addRes = await this.resultSql(newSql);
-        this.$message.success('affectedRows Count:'+addRes.data.rows.affectedRows);
+        // this.$message.success('affectedRows Count:'+addRes.data.rows.affectedRows);
+        this.msgSuccess(addRes.data.rows);
 
         const newRowSql = `select * from ${nowDatabase}.${nowTable} where ${pri}=${addRes.data.rows.insertId}`;
         const newRowRes = await this.resultSql(newRowSql);
@@ -520,7 +547,7 @@ export default {
           this.tableData = [];
           setTimeout(()=>{
             this.tableData = tempArr;
-            this.tableData.unshift(newRowRes.data.rows[0]);
+            this.tableData.push(newRowRes.data.rows[0]);
           },0)
           $('.el-table__body-wrapper').scrollTop = 0;
           this.pageConfig.total = this.pageConfig.total+1;
@@ -688,8 +715,7 @@ export default {
             option.database = '';
             this.getDbTree(option);
           }
-          if(this.isEmpty(res.data.rows.message)){this.$message.success('操作成功');}
-          else {this.$message.success(res.data.rows.message.replace("(",""));}
+          this.msgSuccess(res.data.rows);
         }
       },
       async handleSizeChange(val){
@@ -740,11 +766,10 @@ export default {
           e.target.classList.remove('single-row');
         }, 0);
       },
-      getDbTree(options){
-        console.log('dbtreeOption',options);
+      getDbTree(option){
         this.removeChooseClass();
-        this.chooseOption = this.deepClone(options);
-        let data = options;
+        this.chooseOption = this.deepClone(option);
+        let data = option;
         this.$http.post('/dbtree',data).then(res=>{
           this.dbTree = res.data;
         })
@@ -775,7 +800,8 @@ export default {
             let primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
             let sql = `delete from ${this.nowDatabase}.${this.nowTable} where ${primaryKey} = ${row[primaryKey]}`;
             let removeRes = await this.resultSql(sql);
-            this.$message.success('affectedRows Count:'+removeRes.data.rows.affectedRows);
+            this.monacoInstance.setValue(sql);
+            this.msgSuccess(removeRes.data.rows);
             if(removeRes.data.rows.affectedRows === 1){
               let index = this.tableData.map(item=>item[primaryKey]).indexOf(row[primaryKey]);
               const tempArr = this.deepClone(this.tableData);
@@ -797,8 +823,9 @@ export default {
           let primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
           let sql = `update ${this.nowDatabase}.${this.nowTable} set ${key} = '${value}' where ${primaryKey} = ${row[primaryKey]}`;
           let updateRes = await this.resultSql(sql);
+          this.monacoInstance.setValue(sql);
+          this.msgSuccess(updateRes.data.rows);
           if(!updateRes.data.hasOwnProperty("fields")){
-            this.$message.success(updateRes.data.rows.message.replace("(",""));
             let ss = $('.table-child')
             for(let item of ss){
               item.classList.remove('choose-child');
@@ -889,15 +916,15 @@ export default {
       async getSqlRowCount(sql){
         let type = sql.split(" ")[0].toLowerCase();
         let countSql =  `select count(1) as total from (${sql}) as t${new Date().getTime()}`;
+        if(this.isMultisql(sql)){
+          return 0;
+        }        
         if(type === 'select'){
           // if(!this.isCountSql(sql))
-          //   countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from');
+          //   countSql = sql.replace(/select (.*?) from/i,'select count(1) as total from');  TODO  有bug  select distinct columnName from table;
           // else{
           //   countSql = sql;
           // }
-          if(sql.indexOf(';')>-1){
-            return 0;
-          }
           if(this.isCountSql(sql))
             countSql = sql;
         } else if(type==='delete'||type==='update'||type==='insert'||type==='explain'){
@@ -907,19 +934,7 @@ export default {
         }
         let res = await this.resultSql(countSql);
         return res.data.rows[0].total;
-      },
-      isLimitSql(sql){
-        return /.*limit.*?\d+$/i.test(sql);
-      },
-      isCountSql(sql){
-        return /^select count\(.*?\)((?!,).)*? from/i.test(sql);
-      },
-      isMultisql(sql){
-        const arr = ['select','insert','delete','update','alter','rename','drop'];
-        const lowReg = arr.map(item=>{return '('+item+')'}).join('|');
-        const reg = new RegExp(`;\n* *[${lowReg}|${lowReg.toUpperCase()}]`);
-        return reg.test(sql);
-      },
+      }
     }
 }
 </script>

@@ -6,7 +6,7 @@
         :before-close="handleClose">
             <el-form class="form" size="mini" label-position="top" :model="form" :rules="rules" ref="form" v-loading="loading" element-loading-text="loading...">
                 <el-row>
-                    <el-col :span="3" style="padding-right:10px;">
+                    <!-- <el-col :span="3" style="padding-right:10px;">
                         <el-form-item label="表名" prop="tableName">
                             <el-input v-model="form.tableName" placeholder="表名" :readonly="!editTableNameFlag"></el-input>
                         </el-form-item>
@@ -19,11 +19,15 @@
                                 <el-button icon="el-icon-close" size="mini" circle style="padding:3px;" @click="handleChangeTableNameCancel"></el-button>
                             </template>
                         </el-form-item>
+                    </el-col> -->
+                    <el-col :span="3" style="padding-right:10px;">
+                        <el-form-item label="表名" prop="tableName">
+                            <el-input v-model="form.tableName" placeholder="表名" @blur="handleTableNameChange" @focus="setBacConfig"></el-input>
+                        </el-form-item>
                     </el-col>
-
                     <el-col :span="4" style="padding-right:10px;">
                         <el-form-item label="表注释">
-                            <el-input v-model="form.comment" placeholder="表注释" @blur="handleCommentChange"></el-input>
+                            <el-input v-model="form.comment" placeholder="表注释" @blur="handleCommentChange" @focus="setBacConfig"></el-input>
                         </el-form-item>
                     </el-col>
 
@@ -225,10 +229,24 @@ export default {
         }
     },
     methods:{
+        setBacConfig(){
+            bacConfig = this.deepClone(this.form);
+        },
+        handleTableNameChange(){
+            const oldTableName = bacConfig.tableName;
+            const newTableName = this.form.tableName;
+            if(oldTableName === newTableName){return}
+            const db = this.createTableChooseDb;
+            const sql = `alter table ${db}.${oldTableName} rename to ${newTableName}`;
+            this.$emit('handleRenameTable',sql,db,oldTableName,newTableName);
+        },
         handleCommentChange(){
+            const oldComment = bacConfig.comment;
+            const newComment = this.form.comment;
+            if(oldComment === newComment){return}
             const table = this.form.tableName;
             const db = this.createTableChooseDb;
-            const sql = `ALTER TABLE ${db}.${table} COMMENT = '${this.form.comment}'`;
+            const sql = `ALTER TABLE ${db}.${table} COMMENT = '${newComment}'`;
             this.$emit('handleChangeColumn',sql);
         },
         handleCollateChange(val){
@@ -371,10 +389,13 @@ export default {
             this.loading = false;
         },
         handleClose(){
-            this.loading = false;
-            const form = this.deepClone(defaultForm);
-            this.$emit('update:form',form);
-            this.$emit('update:createTableDialogVisible',false);
+            this.$refs.form.resetFields();
+            this.$nextTick(()=>{
+                this.loading = false;
+                const form = this.deepClone(defaultForm);
+                this.$emit('update:form',form);
+                this.$emit('update:createTableDialogVisible',false);
+            })
         },
         handleSubmit(){
             this.$refs['form'].validate((valid) => {
