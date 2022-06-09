@@ -12,19 +12,19 @@
           default-active="1"
           class="el-menu-vertical-demo"
           :unique-opened="true">
-          <el-submenu v-for="(db,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.stop.native="(e)=>{getDbTree(db)}">
+          <el-submenu v-for="(option,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.stop.native="(e)=>{getDbTree(option)}">
             <template slot="title">
-              <span style="margin-left:-15px;display:block;" @contextmenu="(e)=>{handleContextOption(e,db,index3)}">
+              <span style="margin-left:-15px;display:block;" @contextmenu="(e)=>{handleContextOption(e,option,index3)}">
                 <i class="el-icon-menu" style="font-size:13px;width:20px;margin-right:0;"></i>
-                {{db.name}} 
+                {{option.name}} 
                 <font color="#999999" size="2">
-                  {{db.host}}:{{db.port}}
+                  {{option.host}}:{{option.port}}
                 </font>
               </span>
             </template>
             <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.stop.native="()=>{nowDatabase = item.Database}">
               <template slot="title">
-                <span style="margin-left:-30px;display:block;" @contextmenu="(e)=>{contextmenu(e,item.Database,item.children)}">
+                <span style="margin-left:-30px;display:block;" @contextmenu="(e)=>{contextmenuDatabase(e,option,item.Database,item.children)}">
                   <img src="../../assets/database.png" width="12px">
                   {{item.Database}}
                 </span>
@@ -125,6 +125,7 @@
         @handleModifyColumn="handleModifyColumn"
         @handleRenameTable="handleRenameTable"
       ></edit-table-dialog>
+      <input id="fileElem" type="file" style="display: none;" @change="handleFileChange">
   </div>
 </template>
 
@@ -135,6 +136,8 @@ import CreateTableDialog from './dialog/CreateTableDialog';
 import EditTableDialog from './dialog/EditTableDialog';
 import CreateOptionDialog from './dialog/CreateOptionDialog';
 import CreateDatabaseDialog from './dialog/CreateDatabaseDialog';
+import mysqldump from 'mysqldump';
+import {getDbTree} from '../../../../server/app';
 let bacDatabse = {};
 export default {
     components:{
@@ -439,7 +442,7 @@ export default {
         });
         return false;
       },
-      contextmenu(event,db,tables) {
+      contextmenuDatabase(event,option,db,tables) {
         this.$contextmenu({
           items: [
             {
@@ -481,6 +484,30 @@ export default {
               }
             },
             {
+              icon: "el-icon-edit",
+              label: "导出",
+              onClick: async() => {
+                const newOption = this.deepClone(option);
+                newOption.database = db;
+                delete newOption.name;
+                const today = new Date().toJSON().substring(0,10).replace(/-/g,'');
+                const homeDir = require('os').homedir();
+                const desktopDir = `${homeDir}/Desktop`;
+                const dumpToFile = `${desktopDir}/${db}_${today}.sql`
+                mysqldump({connection: newOption,dumpToFile});
+                this.$message.success('导出成功,文件保存在桌面！');
+              }
+            },
+            {
+              icon: "el-icon-edit",
+              label: "导入",
+              onClick: async() => {
+                this.chooseOption = this.deepClone(option);
+                this.chooseOption.database = db;
+                this.handleUploadSql();
+              }
+            },
+            {
               icon: "el-icon-delete",
               label: "删除数据库",
               onClick: () => {
@@ -494,6 +521,25 @@ export default {
           minWidth:100
         });
         return false;
+      },
+      handleFileChange(e){
+        console.log(e.target.files);
+        var reader = new FileReader();
+        reader.readAsText(e.target.files[0], "UTF-8");
+        reader.onload = (e2) => {
+            const result = e2.target.result;
+            this.pageSelect(result);
+        }
+      },
+      handleUploadSql(){
+        var ie=navigator.appName=="Microsoft Internet Explorer" ? true : false; 
+         if(ie){ 
+             document.getElementById("fileElem").click(); 
+         }else{
+             var a=document.createEvent("MouseEvents");
+             a.initEvent("click", true, true);  
+             document.getElementById("fileElem").dispatchEvent(a);
+         }
       },
       async getCharsetAndCollateByDbName(db){
         // CREATE DATABASE `aaabbbb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
@@ -549,7 +595,7 @@ export default {
         const sql = insertSql.replace(/,"CURRENT_TIMESTAMP"/g,',CURRENT_TIMESTAMP');
         const addRes = await this.resultSql(sql);
         // this.$message.success('affectedRows Count:'+addRes.data.rows.affectedRows);
-        this.msgSuccess({...addRes.data.rows,sql});
+        this.msgSuccess(addRes.data.rows,sql);
         
         const newRowSql = `select * from ${nowDatabase}.${nowTable} where ${pri}=${addRes.data.rows.insertId}`;
         const newRowRes = await this.resultSql(newRowSql);
@@ -727,7 +773,7 @@ export default {
             option.database = '';
             this.getDbTree(option);
           }
-          this.msgSuccess({...res.data.rows,sql});
+          this.msgSuccess(res.data.rows,sql);
         }
       },
       async handleSizeChange(val){
@@ -811,11 +857,11 @@ export default {
           try{
             const db = this.nowDatabase;
             const table = this.nowTable;
-            let primaryKey = await this.getPrimaryKey(this.formatVal(db),this.formatVal(table));
+            let primaryKey = await this.getPrimaryKey(db,table);
             let sql = `DELETE FROM ${this.formatVal(db)}.${this.formatVal(table)} WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
             let removeRes = await this.resultSql(sql);
             this.monacoInstance.setValue(sql);
-            this.msgSuccess({...removeRes.data.rows,sql});
+            this.msgSuccess(removeRes.data.rows,sql);
             if(removeRes.data.rows.affectedRows === 1){
               let index = this.tableData.map(item=>item[primaryKey]).indexOf(row[primaryKey]);
               const tempArr = this.deepClone(this.tableData);
@@ -840,7 +886,7 @@ export default {
           let sql = `UPDATE ${this.formatVal(db)}.${this.formatVal(table)} SET ${this.formatVal(key)} = '${this.escape(value)}' WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
           let updateRes = await this.resultSql(sql);
           this.monacoInstance.setValue(sql);
-          this.msgSuccess({...updateRes.data.rows,sql});
+          this.msgSuccess(updateRes.data.rows,sql);
           if(!updateRes.data.hasOwnProperty("fields")){
             let ss = $('.table-child')
             for(let item of ss){

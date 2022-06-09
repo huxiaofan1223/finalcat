@@ -251,15 +251,20 @@ const isMultisql = (sql)=>{
     return reg.test(sql);
 }
 
-const msgSuccess = (msgObj) => {
+const msgSuccess = (msgObj,sql="") => {
     let msgHTML = '';
+    let msgArr = [];
     if(typeof msgObj === 'object' && !Array.isArray(msgObj)){
-        let msgArr = [];
         for(let i in msgObj){
             msgArr.push(`${i}：${msgObj[i]}`);
         }
-        msgHTML = msgArr.join("<br>");
+    } else {
+        msgArr.push(`toast：success`);
     }
+    if(!isEmpty(sql)){
+        msgArr.push(`sql：${sql}`);
+    }
+    msgHTML = msgArr.join("<br>");
     Message({
         dangerouslyUseHTMLString: true,
         type:"success",

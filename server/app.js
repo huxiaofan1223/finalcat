@@ -1,6 +1,33 @@
 const express = require('express')
 const app = express()
 import db from './db'
+
+export async function getDbTree(options){
+  try {
+    let dbsql = "show databases";
+    let dbs = await db.query(options,dbsql);
+    let tableSql = `
+      SELECT 
+      table_schema,table_name
+      FROM
+        information_schema.tables 
+      WHERE table_type = 'base table' or table_type ='system view'
+    `;
+    let data = await db.query(options,tableSql);
+    for(let i of dbs.rows){
+      i.children = [];
+      for(let j of data.rows){
+        if(j.table_schema === i.Database){
+          i.children.push(j.table_name);
+        }
+      }
+    }
+    return Promise.resolve(dbs.rows);
+  } catch (error) {
+    return Promise.reject(error);
+  }
+}
+
 const server = function(){
   app.use(express.json())
   app.use(express.urlencoded({ extended: true }))
@@ -14,31 +41,7 @@ const server = function(){
       next();
   });
   const port = 3000
-  async function getDbTree(options){
-    try {
-      let dbsql = "show databases";
-      let dbs = await db.query(options,dbsql);
-      let tableSql = `
-        SELECT 
-        table_schema,table_name
-        FROM
-          information_schema.tables 
-        WHERE table_type = 'base table' or table_type ='system view'
-      `;
-      let data = await db.query(options,tableSql);
-      for(let i of dbs.rows){
-        i.children = [];
-        for(let j of data.rows){
-          if(j.table_schema === i.Database){
-            i.children.push(j.table_name);
-          }
-        }
-      }
-      return Promise.resolve(dbs.rows);
-    } catch (error) {
-      return Promise.reject(error);
-    }
-  }
+
   app.get('/', async(req, res) => {
     return "服务已启动";
   })
