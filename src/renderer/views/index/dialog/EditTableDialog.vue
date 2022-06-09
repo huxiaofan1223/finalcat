@@ -4,7 +4,7 @@
         :visible.sync="createTableDialogVisible"
         width="1200px"
         :before-close="handleClose">
-            <el-form class="form" size="mini" label-position="top" :model="form" :rules="rules" ref="form" v-loading="loading" element-loading-text="loading...">
+            <el-form class="form" size="mini" label-position="top" :model="form" ref="form" v-loading="loading" element-loading-text="loading...">
                 <el-row>
                     <el-col :span="3" style="padding-right:10px;">
                         <el-form-item label="表名" prop="tableName">
@@ -39,7 +39,18 @@
                     <el-col :span="4">备注</el-col>
                 </el-row>
                 <div v-for="(item,index) in form.fields" :key="item.key" style="text-align:center;">
-                    <edit-table-column-item :item="item" :index="index" @handleColumnChange="handleColumnChange" @handleRemove="handleRemove"></edit-table-column-item>
+                    <edit-table-column-item 
+                        :item="item"
+                        @handleColumnChange="handleColumnChange"
+                        @handleRemove="handleRemove">
+                        <template #drag>
+                            <el-button circle size="mini" icon="el-icon-rank" 
+                            @dragenter.native="dragenter($event, index)"
+                            @dragover.native="dragover($event, index)"
+                            @dragend.native="dragend($event, index)"
+                            draggable></el-button>
+                        </template>
+                    </edit-table-column-item>
                 </div>
             </el-form>
             <span slot="footer" class="dialog-footer between">
@@ -143,10 +154,26 @@ export default {
             editIndex:'',
             bacConfig:{},
             insertIndex:'',
-            editTableNameFlag:false
+            editTableNameFlag:false,
+            dragIndex:''
         }
     },
+    mounted(){
+
+    },
     methods:{
+        dragenter(e, index) {
+            e.preventDefault();
+        },
+        dragover(e, index) {
+            e.preventDefault();
+            this.dragIndex = index;
+        },
+        dragend(e,index){
+            if (this.dragIndex !== index) {
+                this.handleModify(index,this.dragIndex);
+            }
+        },
         setBacConfig(){
             bacConfig = this.deepClone(this.form);
         },
@@ -227,8 +254,8 @@ export default {
         hasNotChange(){
             return this.equals(this.form,bacConfig);
         },
-        handleColumnChange(field,index){
-            console.log('handleColumnChange');
+        handleColumnChange(field){
+            const index = this.form.fields.indexOf(field);
             if(this.hasNotChange()){return};
             const isInsert = field.insert;
             const db = this.createTableChooseDb;
@@ -259,33 +286,28 @@ export default {
             let temp = array[index1]
             array[index1] = array[index2]
             array[index2] = temp
-            return array
+            return array;
         },
-        handleModify(index,toTop){
-            const targetIndex = toTop? index-2:index+1;
+        handleModify(index,targetIndex){
+            console.log(index);
+            console.log(targetIndex);
             const db = this.createTableChooseDb;
             const table = this.form.tableName;
             const fieldString = this.item2Field(this.form.fields[index]);
             let sql="";
-            if(targetIndex===-1){
-                sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} modify ${fieldString} first`
+            if(targetIndex===0){
+                sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} MODIFY ${fieldString} FIRST`
             } else {
                 const beforeColumnName = this.form.fields[targetIndex].COLUMN_NAME;
-                sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} modify ${fieldString} after ${beforeColumnName}`;
+                sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} MODIFY ${fieldString} AFTER ${this.formatVal(beforeColumnName)}`;
             }
-            this.$emit('handleModifyColumn',sql,db,table,index,toTop);
+            this.$emit('handleModifyColumn',sql,db,table,index,targetIndex);
         },
-        ColumnModifyToTop(index){
-            const fields = this.elChangeExForArray(index-1,index,this.form.fields);
-            const form = this.deepClone(this.form);
-            form.fields = fields;
-            this.$emit('update:form',form);
-        },
-        ColumnModifyToBottom(index){
-            const fields = this.elChangeExForArray(index+1,index,this.form.fields);
-            const form = this.deepClone(this.form);
-            form.fields = fields;
-            this.$emit('update:form',form);
+        ColumnModify(index,targetIndex){
+            const field = this.form.fields[index];
+            this.form.fields.splice(index, 1);
+            this.form.fields.splice(targetIndex, 0, field);
+            console.log(this.form.fields.map(item=>item.COLUMN_NAME));
         },
         item2Field(field){
             const extra = this.isEmpty(field.EXTRA)?'':' '+field.EXTRA;
@@ -373,9 +395,11 @@ export default {
                 this.editIndex = this.insertIndex+1;
             }
         },
-        handleRemove(index,name){
+        handleRemove(field){
+            const index = this.form.fields.indexOf(field);
             const db = this.createTableChooseDb;
             const table = this.form.tableName;
+            const name = field.COLUMN_NAME;
             const sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} DROP ${this.formatVal(name)}`;
             this.$confirm('是否删除此字段('+name+')？', '提示', {
                 confirmButtonText: '确定',
@@ -390,6 +414,9 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.activeDrag{
+    background:red;
+}
 .form{
     ::v-deep .el-form-item--mini.el-form-item, .el-form-item--small.el-form-item{
         margin-bottom:15px;

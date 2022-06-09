@@ -265,12 +265,15 @@ export default {
           this.$refs.editTableForm.stopLoading();
         }
       },
-      async handleModifyColumn(sql,db,table,index,toTop){
+      async handleModifyColumn(sql,db,table,index,targetIndex){
         try{
           this.$refs.editTableForm.startLoading();
           await this.pageSelect(sql);
           this.$refs.editTableForm.stopLoading();
-          toTop?this.$refs.editTableForm.ColumnModifyToTop(index):this.$refs.editTableForm.ColumnModifyToBottom(index);
+          this.$refs.editTableForm.ColumnModify(index,targetIndex);
+          this.$nextTick(()=>{
+            this.$refs.editTableForm.setBacConfig();
+          })
         } catch(err) {
           this.$refs.editTableForm.stopLoading();
         }
@@ -294,6 +297,9 @@ export default {
         try{
           await this.pageSelect(sql);
           this.editTableForm.fields.splice(index,1);
+          this.$nextTick(()=>{
+            this.$refs.editTableForm.setBacConfig();
+          })
         } catch(err) {
           this.$refs.editTableForm.stopLoading();
         }
