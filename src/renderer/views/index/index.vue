@@ -484,7 +484,7 @@ export default {
               }
             },
             {
-              icon: "el-icon-edit",
+              icon: "el-icon-download",
               label: "导出",
               onClick: async() => {
                 const newOption = this.deepClone(option);
@@ -499,7 +499,7 @@ export default {
               }
             },
             {
-              icon: "el-icon-edit",
+              icon: "el-icon-upload2",
               label: "导入",
               onClick: async() => {
                 this.chooseOption = this.deepClone(option);
