@@ -1,8 +1,7 @@
 import request from '../../utils/request'
-import {CollateOptions} from '../../utils/utils'
+
 const state = {
-  dbList:[],
-  CollateOptions:CollateOptions
+  dbList:[]
 }
 
 const mutations = {

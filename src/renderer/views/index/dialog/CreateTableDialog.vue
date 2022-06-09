@@ -224,9 +224,14 @@ export default {
             this.$refs.form.resetFields();
             this.$nextTick(()=>{
                 this.loading = false;
+                const before = Date.now();
                 const form = this.deepClone(defaultForm);
                 this.$emit('update:form',form);
                 this.$emit('update:createTableDialogVisible',false);
+                this.$nextTick(()=>{
+                    const after = Date.now();
+                    console.log(after-before);
+                })
             })
         },
         handleSubmit(){

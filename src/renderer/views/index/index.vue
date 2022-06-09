@@ -387,32 +387,33 @@ export default {
                     this.editTableDialogVisible = true;
                     const tableName = table;
                     this.editTableChooseDb = db;
-                    // setTimeout(()=>{
-                      this.getFields(db,table).then(columns=>{
-                        columns.forEach((field,index)=>{
-                          field.key = index;
-                          field.length = this.columnType2Length(field.COLUMN_TYPE);
-                          if(field.EXTRA==='auto_increment')
-                            field.AI=true;
-                          else
-                            field.AI=false;
-                        })
-                        const fields = columns.map(item=>{
-                          const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT} = item;
-                          return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT};
-                        })
-                        const before = Date.now();
+                    this.getFields(db,table).then(columns=>{
+                      columns.forEach((field,index)=>{
+                        field.key = index;
+                        field.length = this.columnType2Length(field.COLUMN_TYPE);
+                        if(field.EXTRA==='auto_increment')
+                          field.AI=true;
+                        else
+                          field.AI=false;
+                      })
+                      const fields = columns.map(item=>{
+                        const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT} = item;
+                        return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT};
+                      })
+                      const before = Date.now();
+                      
+                      setTimeout(()=>{
                         this.editTableForm = {tableName,fields,charset,collateVal,engine,comment};
+                        this.$forceUpdate();
+                        this.$refs.editTableForm.stopLoading();
                         this.$nextTick(()=>{
                           console.log(Date.now()-before);
                         })
-                        this.$forceUpdate();
-                        this.$refs.editTableForm.stopLoading();
-                      }).catch(err=>{
-                        console.log('getFieldsError',err);
-                        this.$refs.editTableForm.stopLoading();
-                      })
-                    // },100)
+                      },50)
+                    }).catch(err=>{
+                      console.log('getFieldsError',err);
+                      this.$refs.editTableForm.stopLoading();
+                    })
               }
             },
             {

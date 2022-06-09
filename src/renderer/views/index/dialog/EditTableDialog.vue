@@ -6,20 +6,6 @@
         :before-close="handleClose">
             <el-form class="form" size="mini" label-position="top" :model="form" :rules="rules" ref="form" v-loading="loading" element-loading-text="loading...">
                 <el-row>
-                    <!-- <el-col :span="3" style="padding-right:10px;">
-                        <el-form-item label="表名" prop="tableName">
-                            <el-input v-model="form.tableName" placeholder="表名" :readonly="!editTableNameFlag"></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="2">
-                        <el-form-item label="操作">
-                            <el-button icon="el-icon-edit" size="mini" circle style="padding:3px;" @click="handleChangeTableName" v-if="!editTableNameFlag"></el-button>
-                            <template v-else>
-                                <el-button icon="el-icon-check" size="mini" circle style="padding:3px;" @click="handleChangeTableNameConfirm"></el-button>
-                                <el-button icon="el-icon-close" size="mini" circle style="padding:3px;" @click="handleChangeTableNameCancel"></el-button>
-                            </template>
-                        </el-form-item>
-                    </el-col> -->
                     <el-col :span="3" style="padding-right:10px;">
                         <el-form-item label="表名" prop="tableName">
                             <el-input v-model="form.tableName" placeholder="表名" @blur="handleTableNameChange" @focus="setBacConfig"></el-input>
@@ -30,13 +16,11 @@
                             <el-input v-model="form.comment" placeholder="表注释" @blur="handleCommentChange" @focus="setBacConfig"></el-input>
                         </el-form-item>
                     </el-col>
-
                     <el-col :span="4" style="padding-right:10px;">
                         <el-form-item label="排序规则">
                             <collate-select v-model="form.collateVal" :charset="form.charset" placeholder="排序规则" @change="handleCollateChange"></collate-select>
                         </el-form-item>
                     </el-col>
-
                     <el-col :span="4">
                         <el-form-item label="存储引擎">
                             <engine-select v-model="form.engine" placeholder="存储引擎" @change="handleEngineChange"></engine-select>
@@ -54,6 +38,7 @@
                     <el-col :span="1">自增</el-col>
                     <el-col :span="4">备注</el-col>
                 </el-row>
+                <div style="max-height:500px;overflow: auto;">
                 <el-row v-for="(item,index) in form.fields" :key="item.key" style="text-align:center;">
                     <el-col style="padding-right:10px;" :span="3">
                         <el-form-item :prop="'fields.' + index + '.COLUMN_NAME'" :rules="{required: true, message: '字段名不能为空', trigger: 'blur'}">
@@ -126,6 +111,9 @@
                         </el-form-item>
                     </el-col>
                 </el-row>
+                </div>
+            </el-form>
+            <span slot="footer" class="dialog-footer between">
                 <el-row>
                     插入在
                     <el-select v-model.number="insertIndex" size="mini">
@@ -133,8 +121,6 @@
                     </el-select>
                     <el-button type="primary" size="mini" @click="handleAddField" :disabled="!canInsert">新增字段</el-button>
                 </el-row>
-            </el-form>
-            <span slot="footer" class="dialog-footer">
                 <el-button @click="handleClose" size="mini">取 消</el-button>
                 <!-- <el-button @click="handleSee" size="mini">查看SQL</el-button> -->
                 <!-- <el-button type="primary" native-type="submit" @click="handleSubmit" size="mini">确 定</el-button> -->
@@ -389,12 +375,14 @@ export default {
             this.loading = false;
         },
         handleClose(){
-            this.$refs.form.resetFields();
+            this.loading = false;
+            const form = this.deepClone(defaultForm);
+            const before = Date.now();
+            this.$emit('update:form',form);
+            this.$emit('update:createTableDialogVisible',false);
             this.$nextTick(()=>{
-                this.loading = false;
-                const form = this.deepClone(defaultForm);
-                this.$emit('update:form',form);
-                this.$emit('update:createTableDialogVisible',false);
+                const after = Date.now();
+                console.log(after-before);
             })
         },
         handleSubmit(){

@@ -22,16 +22,13 @@ export default {
   },
   data(){
     return {
-      options:[
-        'INT','BIGINT','VARCHAR','TEXT','DATE','DATETIME',
-
-        'TINYINT','SMALLINT','FLOAT','DOUBLE','DECIMAL',
-        
-        'CHAR','TINYBLOB','TINYTEXT','BLOB','MEDIUMBLOB','MEDIUMTEXT','LONGBLOB','LONGTEXT',
-
-        'TIME','YEAR','TIMESTAMP',
-      ].map(item=>item.toLowerCase())
+      options:[]
     }
+  },
+  mounted(){
+    setTimeout(() => {
+      this.options = Object.freeze(["int", "bigint", "varchar", "text", "date", "datetime", "tinyint", "smallint", "float", "double", "decimal", "char", "tinyblob", "tinytext", "blob", "mediumblob", "mediumtext", "longblob", "longtext", "time", "year", "timestamp"]);
+    },50);
   },
   methods:{
     handleChange(val){

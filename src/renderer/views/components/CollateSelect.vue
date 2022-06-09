@@ -1,10 +1,11 @@
 <template>
   <el-select :value="value" @change="handleChange" style="width:100%;" v-bind="$attrs" filterable>
-    <el-option v-for="option in $store.state.Db.CollateOptions" :key="option.Collation" :value="option.Collation" :label="option.Collation"></el-option>
+    <el-option v-for="option in options" :key="option.Collation" :value="option.Collation" :label="option.Collation"></el-option>
   </el-select>
 </template>
 
 <script>
+import {CollateOptions} from '../../utils/utils'
 export default {
   props:{
     value:{
@@ -20,22 +21,16 @@ export default {
     prop: 'value',
     event: 'change'
   },
-  // watch:{
-  //   charset:{
-  //     immediate:true,
-  //     handler(val){
-  //       if(this.value){
-  //         return;
-  //       }
-  //       if(this.isEmpty(val)){
-  //         return;
-  //       } else {
-  //         const filterArr = this.options.filter(item=>item.Charset===val);
-  //         this.$emit('change',filterArr[0].Collation);
-  //       }
-  //     }
-  //   }
-  // },
+  data(){
+    return {
+      options:[]
+    }
+  },
+  mounted(){
+    setTimeout(() => {
+      this.options = Object.freeze(CollateOptions);
+    },50);
+  },
   methods:{
     handleChange(val){
       this.$emit('change',val);
