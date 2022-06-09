@@ -254,6 +254,9 @@ export default {
           this.editTableForm.tableName = newTableName;
           this.$refs.editTableForm.resetEditIndex();
           this.$refs.editTableForm.stopLoading();
+          this.$nextTick(()=>{
+            this.$refs.editTableForm.setBacConfig();
+          })
         } catch(err) {
           this.$refs.editTableForm.stopLoading();
         }
@@ -276,6 +279,9 @@ export default {
           this.$refs.editTableForm.resetEditIndex();
           this.editTableForm.fields.forEach(item=>item.insert=false);
           this.$forceUpdate();
+          this.$nextTick(()=>{
+            this.$refs.editTableForm.setBacConfig();
+          })
         } catch(err) {
           this.$refs.editTableForm.stopLoading();
         }
@@ -391,22 +397,23 @@ export default {
                       columns.forEach((field,index)=>{
                         field.key = index;
                         field.length = this.columnType2Length(field.COLUMN_TYPE);
+                        field.insert = false;
                         if(field.EXTRA==='auto_increment')
                           field.AI=true;
                         else
                           field.AI=false;
                       })
                       const fields = columns.map(item=>{
-                        const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT} = item;
-                        return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT};
+                        const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT,insert} = item;
+                        return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT,insert};
                       })
                       const before = Date.now();
-                      
                       setTimeout(()=>{
                         this.editTableForm = {tableName,fields,charset,collateVal,engine,comment};
                         this.$forceUpdate();
                         this.$refs.editTableForm.stopLoading();
                         this.$nextTick(()=>{
+                          this.$refs.editTableForm.setBacConfig();
                           console.log(Date.now()-before);
                         })
                       },50)

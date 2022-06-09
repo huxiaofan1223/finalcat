@@ -8,12 +8,12 @@
                 <el-row>
                     <el-col :span="3" style="padding-right:10px;">
                         <el-form-item label="表名" prop="tableName">
-                            <el-input v-model="form.tableName" placeholder="表名" @blur="handleTableNameChange" @focus="setBacConfig"></el-input>
+                            <el-input v-model="form.tableName" placeholder="表名" @blur="handleTableNameChange" @keyup.enter.native="handleTableNameChange"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="4" style="padding-right:10px;">
                         <el-form-item label="表注释">
-                            <el-input v-model="form.comment" placeholder="表注释" @blur="handleCommentChange" @focus="setBacConfig"></el-input>
+                            <el-input v-model="form.comment" placeholder="表注释" @blur="handleCommentChange"  @keyup.enter.native="handleCommentChange"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="4" style="padding-right:10px;">
@@ -39,78 +39,9 @@
                     <el-col :span="4">备注</el-col>
                 </el-row>
                 <div style="max-height:500px;overflow: auto;">
-                <el-row v-for="(item,index) in form.fields" :key="item.key" style="text-align:center;">
-                    <el-col style="padding-right:10px;" :span="3">
-                        <el-form-item :prop="'fields.' + index + '.COLUMN_NAME'" :rules="{required: true, message: '字段名不能为空', trigger: 'blur'}">
-                            <el-input v-model="item.COLUMN_NAME" placeholder="名字" :readonly="editIndex!==index"></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col style="padding-right:10px;" :span="2">
-                        <el-form-item>
-                            <type-select v-model="item.DATA_TYPE" placeholder="类型" :disabled="editIndex!==index"></type-select>
-                        </el-form-item>
-                    </el-col>
-                    <el-col style="padding-right:10px;" :span="2">
-                        <el-form-item>
-                            <el-input v-model="item.length" placeholder="长度" :readonly="editIndex!==index"></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col style="padding-right:10px;" :span="3">
-                        <el-form-item>
-                            <el-select v-model="item.COLUMN_DEFAULT"
-                                filterable
-                                allow-create
-                                default-first-option placeholder="默认"
-                                :disabled="editIndex!==index">
-                                <el-option label="无" value=""></el-option>
-                                <el-option label="CURRENT_TIMESTAMP" value="CURRENT_TIMESTAMP"></el-option>
-                            </el-select>
-                        </el-form-item>
-                    </el-col>
-                    <el-col style="padding-right:10px;" :span="3">
-                        <el-form-item>
-                            <collate-select v-model="item.COLLATION_NAME" placeholder="排序规则" :disabled="editIndex!==index"></collate-select>
-                        </el-form-item>
-                    </el-col>
-                    <el-col style="padding-right:10px;" :span="3">
-                        <el-form-item>
-                            <el-select v-model="item.EXTRA" placeholder="属性" :disabled="editIndex!==index">
-                                <el-option label="无" value=""></el-option>
-                                <el-option label="BINARY" value="BINARY"></el-option>
-                                <el-option label="UNSIGNED" value="UNSIGNED"></el-option>
-                                <el-option label="UNSIGNED ZEROFILL" value="UNSIGNED ZEROFILL"></el-option>
-                                <el-option label="on update CURRENT_TIMESTAMP" value="on update CURRENT_TIMESTAMP"></el-option>
-                            </el-select>
-                        </el-form-item>
-                    </el-col>
-                    <el-col style="padding-right:10px;" :span="1">
-                        <el-form-item>
-                            <el-checkbox v-model="item.IS_NULLABLE" true-label="YES" false-label="NO" placeholder="可为空" :disabled="editIndex!==index"></el-checkbox>
-                        </el-form-item>
-                    </el-col>
-                    <el-col style="padding-right:10px;" :span="1">
-                        <el-form-item>
-                            <el-checkbox v-model="item.AI" placeholder="自增" :disabled="editIndex!==index"></el-checkbox>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="3" style="padding-right:10px;">
-                        <el-form-item>
-                            <el-input v-model="item.COLUMN_COMMENT" placeholder="备注" :readonly="editIndex!==index"></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="3">
-                        <el-form-item>
-                            <el-button v-if="!item.insert" icon="el-icon-top" size="mini" circle style="padding:3px;" @click="handleModify(index,true)" :disabled="index===0"></el-button>
-                            <el-button v-if="!item.insert" icon="el-icon-bottom" size="mini" circle style="padding:3px;" @click="handleModify(index,false)" :disabled="index===form.fields.length-1"></el-button>
-                            <template v-if="index===editIndex">
-                                <el-button icon="el-icon-check" size="mini" circle style="padding:3px;" @click="handleEditConfirm(item)"></el-button>
-                                <el-button icon="el-icon-close" size="mini" circle style="padding:3px;" @click="handleEditCancel(index)"></el-button>
-                            </template>
-                            <el-button icon="el-icon-edit" size="mini" circle style="padding:3px;" @click="handleEdit(index)" v-else></el-button>
-                            <el-button size="mini" icon="el-icon-delete" circle style="padding:3px;" v-if="!item.insert&&editIndex!==index" type="danger" @click="handleRemove(index,item.COLUMN_NAME)"></el-button>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
+                    <div v-for="(item,index) in form.fields" :key="item.key" style="text-align:center;">
+                        <edit-table-column-item :item="item" :index="index" @handleColumnChange="handleColumnChange" @handleRemove="handleRemove"></edit-table-column-item>
+                    </div>
                 </div>
             </el-form>
             <span slot="footer" class="dialog-footer between">
@@ -134,6 +65,7 @@
 import TypeSelect from '../../components/TypeSelect';
 import CollateSelect from '../../components/CollateSelect';
 import EngineSelect from '../../components/EngineSelect';
+import EditTableColumnItem from './EditTableColumnItem.vue';
 const defaultForm = {
     tableName:'',
     comment:'',
@@ -151,7 +83,8 @@ const defaultForm = {
             IS_NULLABLE:'NO',
             EXTRA:'',
             AI:false,
-            COLUMN_COMMENT:''
+            COLUMN_COMMENT:'',
+            insert:false
         }
     ]
 }
@@ -160,7 +93,8 @@ export default {
     components:{
         TypeSelect,
         CollateSelect,
-        EngineSelect
+        EngineSelect,
+        EditTableColumnItem
     },
     watch:{
         form:{
@@ -232,19 +166,19 @@ export default {
             if(oldComment === newComment){return}
             const table = this.form.tableName;
             const db = this.createTableChooseDb;
-            const sql = `ALTER TABLE ${db}.${table} COMMENT = '${newComment}'`;
+            const sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} COMMENT = '${newComment}'`;
             this.$emit('handleChangeColumn',sql);
         },
         handleCollateChange(val){
             const table = this.form.tableName;
             const db = this.createTableChooseDb;
-            const sql = `ALTER TABLE ${db}.${table} COLLATE ${val}`;
+            const sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} COLLATE ${val}`;
             this.$emit('handleChangeColumn',sql);
         },
         handleEngineChange(val){
             const table = this.form.tableName;
             const db = this.createTableChooseDb;
-            const sql = `ALTER TABLE ${db}.${table} ENGINE = ${val}`;
+            const sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} ENGINE = ${val}`;
             this.$emit('handleChangeColumn',sql);
         },
         handleChangeTableName(){
@@ -292,7 +226,12 @@ export default {
                 bacConfig = this.deepClone(this.form);
             })
         },
-        handleEditConfirm(field){
+        hasNotChange(){
+            return this.equals(this.form,bacConfig);
+        },
+        handleColumnChange(field,index){
+            console.log('handleColumnChange');
+            if(this.hasNotChange()){return};
             const isInsert = field.insert;
             const db = this.createTableChooseDb;
             const table = this.form.tableName;
@@ -300,21 +239,21 @@ export default {
             if(isInsert){
                 let sql="";
                 if(this.insertIndex===''){
-                    sql = `ALTER TABLE ${db}.${table} ADD ${fieldString}`;
+                    sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} ADD ${fieldString}`;
                 } else {
                     if(this.insertIndex===-1){
-                        sql = `ALTER TABLE ${db}.${table} ADD ${fieldString} first`;
+                        sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} ADD ${fieldString} first`;
                     } else {
                         const beforeColumnName = bacConfig.fields[this.insertIndex].COLUMN_NAME;
                         console.log(this.insertIndex);
-                        sql = `ALTER TABLE ${db}.${table} ADD ${fieldString} after ${beforeColumnName}`;
+                        sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} ADD ${fieldString} after ${beforeColumnName}`;
                     }
                 }
                 this.$emit('handleChangeColumn',sql,db,table,isInsert);
             } else {
-                const beforeColumn = bacConfig.fields[this.editIndex];
+                const beforeColumn = bacConfig.fields[index];
                 const beforeName = beforeColumn.COLUMN_NAME;
-                const sql = `ALTER TABLE ${db}.${table} CHANGE ${beforeName} ${fieldString}`;
+                const sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} CHANGE ${beforeName} ${fieldString}`;
                 this.$emit('handleChangeColumn',sql,db,table,!isInsert);
             }
         },
@@ -331,10 +270,10 @@ export default {
             const fieldString = this.item2Field(this.form.fields[index]);
             let sql="";
             if(targetIndex===-1){
-                sql = `ALTER TABLE ${db}.${table} modify ${fieldString} first`
+                sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} modify ${fieldString} first`
             } else {
                 const beforeColumnName = this.form.fields[targetIndex].COLUMN_NAME;
-                sql = `ALTER TABLE ${db}.${table} modify ${fieldString} after ${beforeColumnName}`;
+                sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} modify ${fieldString} after ${beforeColumnName}`;
             }
             this.$emit('handleModifyColumn',sql,db,table,index,toTop);
         },
@@ -351,15 +290,15 @@ export default {
             this.$emit('update:form',form);
         },
         item2Field(field){
-            const extra = this.isEmpty(field.EXTRA)?'':field.EXTRA;
+            const extra = this.isEmpty(field.EXTRA)?'':' '+field.EXTRA;
             const length = this.isEmpty(field.length) ? '':`(${field.length})`;
-            const nullable = field.IS_NULLABLE==='YES'?'NULL':'NOT NULL';
-            let defaultVal = this.isEmpty(field.COLUMN_DEFAULT)?'':`DEFAULT '${field.COLUMN_DEFAULT}'`;
-            const collateVal = this.isEmpty(field.COLLATION_NAME)?'':`COLLATE ${field.COLLATION_NAME}`;
-            const ai = field.AI?'AUTO_INCREMENT':'';
-            const comment = this.isEmpty(field.COLUMN_COMMENT)?'':`COMMENT '${field.COLUMN_COMMENT}'`;
-            if(field.COLUMN_DEFAULT === 'CURRENT_TIMESTAMP') defaultVal='DEFAULT CURRENT_TIMESTAMP';
-            return `${field.COLUMN_NAME} ${field.DATA_TYPE}${length} ${extra} ${collateVal} ${nullable} ${defaultVal} ${ai} ${comment}`;
+            const nullable = field.IS_NULLABLE==='YES'?' NULL':' NOT NULL';
+            let defaultVal = this.isEmpty(field.COLUMN_DEFAULT)?'':` DEFAULT '${field.COLUMN_DEFAULT}'`;
+            const collateVal = this.isEmpty(field.COLLATION_NAME)?'':` COLLATE ${field.COLLATION_NAME}`;
+            const ai = field.AI?' AUTO_INCREMENT':'';
+            const comment = this.isEmpty(field.COLUMN_COMMENT)?'':` COMMENT '${field.COLUMN_COMMENT}'`;
+            if(field.COLUMN_DEFAULT === 'CURRENT_TIMESTAMP') defaultVal=' DEFAULT CURRENT_TIMESTAMP';
+            return `${this.formatVal(field.COLUMN_NAME)} ${field.DATA_TYPE}${length}${extra}${collateVal}${nullable}${defaultVal}${ai}${comment}`;
         },
         getPrimaryString(fields){
             const primaryArr = fields.filter(item=>item.AI).map(item=>"`"+item.COLUMN_NAME+"`");
@@ -399,7 +338,7 @@ export default {
             const fieldString = form.fields.map(item=>this.item2Field(item)).join(',');
             const primaryString = this.getPrimaryString(form.fields);
             const db = this.createTableChooseDb;
-            return `CREATE TABLE ${db}.${tableName} (${fieldString} ${primaryString})`;
+            return `CREATE TABLE ${this.formatVal(db)}.${this.formatVal(tableName)} (${fieldString} ${primaryString})`;
         },
         handleSee(){
             this.$refs['form'].validate((valid) => {
@@ -439,7 +378,7 @@ export default {
         handleRemove(index,name){
             const db = this.createTableChooseDb;
             const table = this.form.tableName;
-            const sql = `ALTER TABLE ${db}.${table} DROP ${name}`;
+            const sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} DROP ${this.formatVal(name)}`;
             this.$confirm('是否删除此字段('+name+')？', '提示', {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消',

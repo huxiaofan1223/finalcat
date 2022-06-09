@@ -1,5 +1,5 @@
 <template>
-  <el-select :value="value" @change="handleChange" style="width:100%;" v-bind="$attrs" filterable>
+  <el-select :value="value" @change="handleChange" style="width:100%;" v-bind="$attrs" filterable v-on="$listeners">
     <el-option v-for="option in options" :key="option.Collation" :value="option.Collation" :label="option.Collation"></el-option>
   </el-select>
 </template>
@@ -17,10 +17,6 @@ export default {
       default:''
     }
   },
-  model: {
-    prop: 'value',
-    event: 'change'
-  },
   data(){
     return {
       options:[]
@@ -29,11 +25,11 @@ export default {
   mounted(){
     setTimeout(() => {
       this.options = Object.freeze(CollateOptions);
-    },50);
+    },0);
   },
   methods:{
     handleChange(val){
-      this.$emit('change',val);
+      this.$emit('input',val);
     }
   }
 }

@@ -1,5 +1,5 @@
 <template>
-  <el-select :value="value" @change="handleChange" style="width:100%;" :placeholder="placeholder" v-bind="$attrs">
+  <el-select :value="value" @change="handleChange" style="width:100%;" v-bind="$attrs" v-on="$listeners">
     <el-option v-for="option in options" :key="option" :value="option" :label="option"></el-option>
   </el-select>
 </template>
@@ -10,15 +10,7 @@ export default {
     value:{
       type:String,
       default:'int'
-    },
-    placeholder:{
-      type:String,
-      default:''
     }
-  },
-  model: {
-    prop: 'value',
-    event: 'change'
   },
   data(){
     return {
@@ -27,7 +19,7 @@ export default {
   },
   methods:{
     handleChange(val){
-      this.$emit('change',val);
+      this.$emit('input',val);
     }
   }
 }
