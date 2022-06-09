@@ -5,7 +5,6 @@
 </template>
 
 <script>
-import {CollateOptions} from '../../utils/utils'
 export default {
   props:{
     value:{
@@ -24,7 +23,7 @@ export default {
   },
   mounted(){
     setTimeout(() => {
-      this.options = Object.freeze(CollateOptions);
+      this.options = Object.freeze(this.CollateOptions);
     },0);
   },
   methods:{

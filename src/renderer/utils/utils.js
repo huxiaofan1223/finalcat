@@ -1,14 +1,14 @@
 import { Message } from "element-ui";
-export const deepClone = (a) => {
+const deepClone = (a) => {
     return JSON.parse(JSON.stringify(a));
 }
-export const equals = (a,b) => {
+const equals = (a,b) => {
     return JSON.stringify(a) === JSON.stringify(b);
 }
-export const isEmpty = (a) => {
+const isEmpty = (a) => {
     return a === '' || a === undefined || a === null;
 }
-export const CollateOptions = [
+const CollateOptions = [
     {"Collation":"big5_chinese_ci","Charset":"big5","Id":1,"Default":"Yes","Compiled":"Yes","Sortlen":1},
     {"Collation":"big5_bin","Charset":"big5","Id":84,"Default":"","Compiled":"Yes","Sortlen":1},
     {"Collation":"dec8_swedish_ci","Charset":"dec8","Id":3,"Default":"Yes","Compiled":"Yes","Sortlen":1},
@@ -232,30 +232,31 @@ export const CollateOptions = [
     {"Collation":"gb18030_bin","Charset":"gb18030","Id":249,"Default":"","Compiled":"Yes","Sortlen":1},
     {"Collation":"gb18030_unicode_520_ci","Charset":"gb18030","Id":250,"Default":"","Compiled":"Yes","Sortlen":8}
 ]
-export const getDefaultCollateByCharset = (charset)=>{
+
+const getDefaultCollateByCharset = (charset)=>{
     const filterArr = CollateOptions.filter(item=>item.Charset===charset);
     return filterArr[0].Collation;
 }
 
-export const isLimitSql = (sql)=>{
+const isLimitSql = (sql)=>{
     return /.*limit.*?\d+$/i.test(sql);
 }
-export const isCountSql = (sql)=>{
+const isCountSql = (sql)=>{
     return /^select count\(.*?\)((?!,).)*? from/i.test(sql);
 }
-export const isMultisql = (sql)=>{
+const isMultisql = (sql)=>{
     const arr = ['select','insert','delete','update','alter','rename','drop'];
     const lowReg = arr.map(item=>{return '('+item+')'}).join('|');
     const reg = new RegExp(`;\n* *[${lowReg}|${lowReg.toUpperCase()}]`);
     return reg.test(sql);
 }
 
-export const msgSuccess = (msgObj) => {
+const msgSuccess = (msgObj) => {
     let msgHTML = '';
     if(typeof msgObj === 'object' && !Array.isArray(msgObj)){
         let msgArr = [];
         for(let i in msgObj){
-         msgArr.push(`${i}：${msgObj[i]}`);
+            msgArr.push(`${i}：${msgObj[i]}`);
         }
         msgHTML = msgArr.join("<br>");
     }
@@ -269,12 +270,39 @@ export const msgSuccess = (msgObj) => {
 }
 
 // a=>`a`
-export const formatVal = (val) => {
+const formatVal = (val) => {
     return '`'+val+'`'
 }
 
 // '=>\'
 // \=>\\
-export const escape = (val) => {
+const escape = (val) => {
     return val.replace(/['\\]/g,(match)=>{return `\\${match}`});
+}
+
+
+// int(2)=>2
+const columnType2Length = (val)=>{
+    const mt = val.match(/.*\((\d+)\)/);
+    if(mt!==null){
+        return mt[1];
+    } else {
+        return '';
+    }
+}
+
+
+export default {
+    deepClone,
+    equals,
+    isEmpty,
+    CollateOptions,
+    formatVal,
+    escape,
+    columnType2Length,
+    msgSuccess,
+    getDefaultCollateByCharset,
+    isMultisql,
+    isLimitSql,
+    isCountSql
 }

@@ -38,10 +38,8 @@
                     <el-col :span="1">自增</el-col>
                     <el-col :span="4">备注</el-col>
                 </el-row>
-                <div style="max-height:500px;overflow: auto;">
-                    <div v-for="(item,index) in form.fields" :key="item.key" style="text-align:center;">
-                        <edit-table-column-item :item="item" :index="index" @handleColumnChange="handleColumnChange" @handleRemove="handleRemove"></edit-table-column-item>
-                    </div>
+                <div v-for="(item,index) in form.fields" :key="item.key" style="text-align:center;">
+                    <edit-table-column-item :item="item" :index="index" @handleColumnChange="handleColumnChange" @handleRemove="handleRemove"></edit-table-column-item>
                 </div>
             </el-form>
             <span slot="footer" class="dialog-footer between">
@@ -157,7 +155,7 @@ export default {
             const newTableName = this.form.tableName;
             if(oldTableName === newTableName){return}
             const db = this.createTableChooseDb;
-            const sql = `alter table ${db}.${oldTableName} rename to ${newTableName}`;
+            const sql = `alter table ${this.formatVal(db)}.${this.formatVal(oldTableName)} rename to ${this.formatVal(newTableName)}`;
             this.$emit('handleRenameTable',sql,db,oldTableName,newTableName);
         },
         handleCommentChange(){
@@ -253,7 +251,7 @@ export default {
             } else {
                 const beforeColumn = bacConfig.fields[index];
                 const beforeName = beforeColumn.COLUMN_NAME;
-                const sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} CHANGE ${beforeName} ${fieldString}`;
+                const sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} CHANGE ${this.formatVal(beforeName)} ${fieldString}`;
                 this.$emit('handleChangeColumn',sql,db,table,!isInsert);
             }
         },

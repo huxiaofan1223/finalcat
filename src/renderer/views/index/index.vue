@@ -67,7 +67,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column v-for="(item,index) in fields" :key="`${item.db}-${item.table}-${item.name}`">
+            <el-table-column :min-width="formatMinwidth(item)" v-for="(item,index) in fields" :key="`${item.db}-${item.table}-${item.name}`">
               <template #header>
                 {{fields[index].name}}
                 <font color="#555555">{{fields[index].COLUMN_TYPE}}</font>
@@ -247,6 +247,10 @@ export default {
       });
     },
     methods:{
+      formatMinwidth(item){
+        const {name,COLUMN_TYPE} = item;
+        return `${(name+COLUMN_TYPE).length*10}px`;
+      },
       async handleRenameTable(sql,db,oldTableName,newTableName){
         try{
           this.$refs.editTableForm.startLoading();
@@ -321,15 +325,6 @@ export default {
           const sql = `drop database ${val}`;
           await this.pageSelect(sql);
         })
-      },
-      // int(2)=>2
-      columnType2Length(val){
-        const mt = val.match(/.*\((\d+)\)/);
-        if(mt!==null){
-          return mt[1];
-        } else {
-          return '';
-        }
       },
       handleContextOption(event,option,index){
         this.chooseOption = option;
@@ -514,7 +509,6 @@ export default {
         const charset = matchResult[3];
         const collateVal = matchResult[5]||this.getDefaultCollateByCharset(charset);
         const comment = matchResult[7]||'';
-        console.log({engine,charset,collateVal,comment});
         return {engine,charset,collateVal,comment};
       },
       type2value(dataType){
@@ -546,11 +540,11 @@ export default {
         const {nowDatabase,nowTable} = this;
         const values = valuesStr.substring(1,length1);
         const insertSql = `INSERT INTO ${nowDatabase}.${nowTable} VALUES (${values})`;
-        const newSql = insertSql.replace(/,"CURRENT_TIMESTAMP"/g,',CURRENT_TIMESTAMP');
-        const addRes = await this.resultSql(newSql);
+        const sql = insertSql.replace(/,"CURRENT_TIMESTAMP"/g,',CURRENT_TIMESTAMP');
+        const addRes = await this.resultSql(sql);
         // this.$message.success('affectedRows Count:'+addRes.data.rows.affectedRows);
-        this.msgSuccess(addRes.data.rows);
-
+        this.msgSuccess({...addRes.data.rows,sql});
+        
         const newRowSql = `select * from ${nowDatabase}.${nowTable} where ${pri}=${addRes.data.rows.insertId}`;
         const newRowRes = await this.resultSql(newRowSql);
 
@@ -727,7 +721,7 @@ export default {
             option.database = '';
             this.getDbTree(option);
           }
-          this.msgSuccess(res.data.rows);
+          this.msgSuccess({...res.data.rows,sql});
         }
       },
       async handleSizeChange(val){
@@ -809,11 +803,13 @@ export default {
           type: 'warning'
         }).then(async() => {
           try{
-            let primaryKey = await this.getPrimaryKey(this.nowDatabase,this.nowTable);
-            let sql = `delete from ${this.nowDatabase}.${this.nowTable} where ${primaryKey} = ${row[primaryKey]}`;
+            const db = this.nowDatabase;
+            const table = this.nowTable;
+            let primaryKey = await this.getPrimaryKey(this.formatVal(db),this.formatVal(table));
+            let sql = `DELETE FROM ${this.formatVal(db)}.${this.formatVal(table)} WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
             let removeRes = await this.resultSql(sql);
             this.monacoInstance.setValue(sql);
-            this.msgSuccess(removeRes.data.rows);
+            this.msgSuccess({...removeRes.data.rows,sql});
             if(removeRes.data.rows.affectedRows === 1){
               let index = this.tableData.map(item=>item[primaryKey]).indexOf(row[primaryKey]);
               const tempArr = this.deepClone(this.tableData);
@@ -835,10 +831,10 @@ export default {
           const db = this.nowDatabase;
           const table = this.nowTable;
           let primaryKey = await this.getPrimaryKey(db,table);
-          let sql = `update ${this.formatVal(db)}.${this.formatVal(table)} set ${this.formatVal(key)} = '${this.escape(value)}' where ${primaryKey} = ${row[primaryKey]}`;
+          let sql = `UPDATE ${this.formatVal(db)}.${this.formatVal(table)} SET ${this.formatVal(key)} = '${this.escape(value)}' WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
           let updateRes = await this.resultSql(sql);
           this.monacoInstance.setValue(sql);
-          this.msgSuccess(updateRes.data.rows);
+          this.msgSuccess({...updateRes.data.rows,sql});
           if(!updateRes.data.hasOwnProperty("fields")){
             let ss = $('.table-child')
             for(let item of ss){

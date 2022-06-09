@@ -14,18 +14,9 @@ if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.prototype.$http = request;
 Vue.config.productionTip = false
 
-import {equals,deepClone,isEmpty,getDefaultCollateByCharset,isCountSql,isLimitSql,isMultisql,msgSuccess,formatVal,escape} from './utils/utils'
-
-Vue.prototype.equals = equals;
-Vue.prototype.deepClone = deepClone;
-Vue.prototype.isEmpty = isEmpty;
-Vue.prototype.getDefaultCollateByCharset = getDefaultCollateByCharset;
-Vue.prototype.isCountSql = isCountSql;
-Vue.prototype.isLimitSql = isLimitSql;
-Vue.prototype.isMultisql = isMultisql;
-Vue.prototype.msgSuccess = msgSuccess;
-Vue.prototype.formatVal = formatVal;
-Vue.prototype.escape = escape;
+import utils from './utils/utils';
+console.log(utils);
+Object.keys(utils).forEach(key => {Vue.prototype[key] = utils[key]});
 
 import SqlShowDialog from './views/index/dialog/SqlShowDialog';
 Vue.prototype.$SqlShowDialog = SqlShowDialog.install;
