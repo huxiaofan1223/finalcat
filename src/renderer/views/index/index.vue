@@ -47,8 +47,7 @@
       </template>
       </div>
       <div class="app-right">
-        <div id="monaco">
-        </div>
+        <monaco-sql-editor v-model="sql"></monaco-sql-editor>
         <div class="padding10 between items-center">
           <div>
             <span style="margin-right:20px;">当前连接地址：<font color="#66b1ff">{{chooseOption.host===undefined?'无':chooseOption.host}}</font></span>
@@ -130,25 +129,23 @@
 </template>
 
 <script>
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
-import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
 import CreateTableDialog from './dialog/CreateTableDialog';
 import EditTableDialog from './dialog/EditTableDialog';
 import CreateOptionDialog from './dialog/CreateOptionDialog';
 import CreateDatabaseDialog from './dialog/CreateDatabaseDialog';
 import mysqldump from 'mysqldump';
-
+import MonacoSqlEditor from './MonacoSqlEditor'
 let bacDatabse = {};
 export default {
     components:{
       EditTableDialog,
       CreateTableDialog,
       CreateOptionDialog,
-      CreateDatabaseDialog
+      CreateDatabaseDialog,
+      MonacoSqlEditor
     },
     data(){
         return {
-          monacoInstance:null,
           nowDatabase:"",
           nowTable:"",
           dbTree:[],
@@ -242,12 +239,6 @@ export default {
             return arr;
           }
         }
-    },
-    mounted(){
-      this.monacoInstance = monaco.editor.create(document.getElementById("monaco"),{
-          value:``,
-          language:"sql",
-      });
     },
     methods:{
       formatMinwidth(item){
@@ -745,7 +736,6 @@ export default {
           })
       },
       async pageSelect(sql){
-        this.monacoInstance.setValue(sql);
         const type = this.getSqlType(sql);
         let res = await this.resultSql(sql,true);
         if(type !== 'select'){
@@ -781,14 +771,14 @@ export default {
         this.pageConfig.pageSize = val;
         this.pageConfig.pageNum = 1;
         let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
-        let sql = this.sql+` limit ${start},${this.pageConfig.pageSize}`;
-        await this.pageSelect(sql);
+        this.sql = this.sql.replace(/ limit \d+,\d+$/g,(val)=>{ return ` limit ${start},${this.pageConfig.pageSize}`});
+        await this.pageSelect(this.sql);
       },
       async handleCurrentChange(val){
         this.pageConfig.pageNum = val;
         let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
-        let sql = this.sql+` limit ${start},${this.pageConfig.pageSize}`;
-        await this.pageSelect(sql);
+        this.sql = this.sql.replace(/ limit \d+,\d+$/g,(val)=>{ return ` limit ${start},${this.pageConfig.pageSize}`});
+        await this.pageSelect(this.sql);
       },
       clickParent(){
         if(this.rollBackSpan!==null&&$('.choose-child')!==null){
@@ -838,8 +828,8 @@ export default {
         this.nowTable = table;
         this.nowDatabase = database;
         let sql = `select * from ${this.nowTable}`;
-        const limitSql = await this.preFixLimitSql(sql);
-        await this.pageSelect(limitSql);
+        await this.preFixLimitSql(sql);
+        await this.pageSelect(this.sql);
       },
       removeChooseClass(){
         this.rollBackSpan = null;
@@ -860,8 +850,8 @@ export default {
             const table = this.nowTable;
             let primaryKey = await this.getPrimaryKey(db,table);
             let sql = `DELETE FROM ${this.formatVal(db)}.${this.formatVal(table)} WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
+            this.sql = sql;
             let removeRes = await this.resultSql(sql);
-            this.monacoInstance.setValue(sql);
             this.msgSuccess(removeRes.data.rows,sql);
             if(removeRes.data.rows.affectedRows === 1){
               let index = this.tableData.map(item=>item[primaryKey]).indexOf(row[primaryKey]);
@@ -885,8 +875,8 @@ export default {
           const table = this.nowTable;
           let primaryKey = await this.getPrimaryKey(db,table);
           let sql = `UPDATE ${this.formatVal(db)}.${this.formatVal(table)} SET ${this.formatVal(key)} = '${this.escape(value)}' WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
+          this.sql = sql;
           let updateRes = await this.resultSql(sql);
-          this.monacoInstance.setValue(sql);
           this.msgSuccess(updateRes.data.rows,sql);
           if(!updateRes.data.hasOwnProperty("fields")){
             let ss = $('.table-child')
@@ -937,7 +927,8 @@ export default {
         }
       },
       async handleSubmit(){
-        let sql = this.monacoInstance.getValue();
+        // let sql = this.monacoInstance.getValue();
+        const {sql} = this;
         if(sql === ''){
           this.$message.error("请输入sql");
           return;
@@ -947,34 +938,22 @@ export default {
           return;
         }
         this.loading = true;
-        let limitSql = sql;
         if(this.getSqlType(sql) === 'select'){
-          limitSql = await this.preFixLimitSql(sql);
+          this.preFixLimitSql(sql);
         }
-        await this.pageSelect(limitSql);
+        await this.pageSelect(sql);
       },
       getSqlType(sql){
         const type = sql.split(" ")[0].toLowerCase();
         return type;
       },
       async preFixLimitSql(sql){
-        this.pageConfig.pageNum = 1;
-        this.pageConfig.total = 0;
-        this.sql = this.deepClone(sql);
-        if(this.isLimitSql(sql)){
-          this.hasLimit = false;
-        } else {
+        if(!this.isLimitSql(sql)){
           let total = await this.getSqlRowCount(sql);
           this.pageConfig.total = total;
-          if(this.pageConfig.pageSize<total){
-              let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
-              sql = sql +` limit ${start},${this.pageConfig.pageSize}`;
-              this.hasLimit = true;
-          } else {
-            this.hasLimit = false;
-          }
+          let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
+          this.sql = sql +` limit ${start},${this.pageConfig.pageSize}`;
         }
-        return sql;
       },
       async getSqlRowCount(sql){
         let type = sql.split(" ")[0].toLowerCase();
@@ -1031,11 +1010,6 @@ export default {
     width:calc(100% - 260px);
     display: flex;
     flex-direction: column;
-    #monaco{
-      min-height:100px;
-      border:1px solid #f7f7f7;
-      padding:1rem 0;
-    }
     .table-child{
       font-size:13px;
       padding:5px;
