@@ -262,7 +262,7 @@ const msgSuccess = (msgObj,sql="") => {
         msgArr.push(`toast：success`);
     }
     if(!isEmpty(sql)){
-        msgArr.push(`sql：${sql}`);
+        msgArr.push(`sql：${sql.length>100?sql.substring(0,100)+'...':sql}`);
     }
     msgHTML = msgArr.join("<br>");
     Message({

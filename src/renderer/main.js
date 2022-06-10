@@ -15,7 +15,6 @@ Vue.prototype.$http = request;
 Vue.config.productionTip = false
 
 import utils from './utils/utils';
-console.log(utils);
 Object.keys(utils).forEach(key => {Vue.prototype[key] = utils[key]});
 
 import SqlShowDialog from './views/index/dialog/SqlShowDialog';

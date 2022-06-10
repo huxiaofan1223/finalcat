@@ -6,7 +6,7 @@
 
 <script>
   export default {
-    name: 'finalcat'
+    name: 'FinalCat'
   }
 </script>
 

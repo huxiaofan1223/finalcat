@@ -28,7 +28,7 @@ function createWindow () {
   })
 
   mainWindow.loadURL(winURL);
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
   // startServer();
   server();
   mainWindow.on('closed', () => {

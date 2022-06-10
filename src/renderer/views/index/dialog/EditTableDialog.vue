@@ -42,9 +42,11 @@
                     <edit-table-column-item 
                         :item="item"
                         @handleColumnChange="handleColumnChange"
-                        @handleRemove="handleRemove">
+                        @handleRemove="handleRemove"
+                        @handleInsertCancel="handleInsertCancel">
                         <template #drag>
-                            <el-button circle size="mini" icon="el-icon-rank" 
+                            <el-button circle size="mini" icon="el-icon-rank"
+                            style="padding:3px;"
                             @dragenter.native="dragenter($event, index)"
                             @dragover.native="dragover($event, index)"
                             @dragend.native="dragend($event, index)"
@@ -234,11 +236,9 @@ export default {
             this.editIndex = '';
             this.editTableNameFlag = false;
         },
-        handleEditCancel(){
-            this.editIndex = '';
+        handleInsertCancel(){
             const hasChange = !this.equals(bacConfig,this.form);
             if(hasChange){this.$emit('update:form',bacConfig)};
-            bacConfig = {};
         },
         handleEdit(index){
             if(this.editTableNameFlag){

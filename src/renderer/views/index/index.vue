@@ -137,7 +137,7 @@ import EditTableDialog from './dialog/EditTableDialog';
 import CreateOptionDialog from './dialog/CreateOptionDialog';
 import CreateDatabaseDialog from './dialog/CreateDatabaseDialog';
 import mysqldump from 'mysqldump';
-import {getDbTree} from '../../../../server/app';
+
 let bacDatabse = {};
 export default {
     components:{

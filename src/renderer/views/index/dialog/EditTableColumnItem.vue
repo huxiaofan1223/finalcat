@@ -60,14 +60,11 @@
     </el-col>
     <el-col :span="2">
         <el-form-item>
-            <!-- <el-button v-if="!item.insert" icon="el-icon-top" size="mini" circle style="padding:3px;" @click="handleModify(index,true)" :disabled="index===0"></el-button>
-            <el-button v-if="!item.insert" icon="el-icon-bottom" size="mini" circle style="padding:3px;" @click="handleModify(index,false)" :disabled="index===form.fields.length-1"></el-button> -->
-            <!-- <template v-if="item.insert">
-                <el-button icon="el-icon-check" size="mini" circle style="padding:3px;" @click="handleColumnChange(item)"></el-button>
-                <el-button icon="el-icon-close" size="mini" circle style="padding:3px;" @click="handleEditCancel(index)"></el-button>
-            </template> -->
-            <slot name="drag"></slot>
-            <el-button size="mini" icon="el-icon-delete" circle style="padding:3px;" v-if="!item.insert" type="danger" @click="handleRemove(item)"></el-button>
+            <el-button icon="el-icon-close" size="mini" circle style="padding:3px;" @click="handleInsertCancel(item)" v-if="item.insert"></el-button>
+            <template v-else>
+                <slot name="drag"></slot>
+                <el-button size="mini" icon="el-icon-delete" circle style="padding:3px;" type="danger" @click="handleRemove(item)"></el-button>
+            </template>
         </el-form-item>
     </el-col>
 </el-row>
@@ -89,11 +86,13 @@ export default {
     },
     methods:{
         handleColumnChange(item){
-            console.log(item);
             this.$emit('handleColumnChange',item);
         },
         handleRemove(item){
             this.$emit('handleRemove',item);
+        },
+        handleInsertCancel(item){
+            this.$emit('handleInsertCancel',item);
         }
     }
 }
