@@ -729,12 +729,13 @@ export default {
       },
       handleCreateOptionSubmit(configForm){
           const flag = this.$refs.createOptionForm.getEditMode();
-          this.$store.dispatch('valideDbConfig',configForm).then(res=>{
+          const newConfigForm = {...configForm}
+          this.$store.dispatch('valideDbConfig',newConfigForm).then(res=>{
             if(!flag){
-              this.$store.dispatch('addDbConfig',configForm);
+              this.$store.dispatch('addDbConfig',newConfigForm);
             } else {
               if(!this.isEmpty(this.editOptionIndex))
-                this.$store.dispatch('changeConfig',configForm,this.editOptionIndex);
+                this.$store.dispatch('changeConfig',newConfigForm,this.editOptionIndex);
             }
             this.$message.success("操作成功");
             this.$refs.createOptionForm.stopLoading();
