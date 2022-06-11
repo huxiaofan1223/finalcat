@@ -71,11 +71,12 @@ export default {
             this.$refs[formName].validate((valid) => {
                 if (valid) {
                     this.loading = true;
-                    this.$emit('handleCreateDatabaseSubmit',this.form);
+                    this.$emit('handleCreateDatabaseSubmit',this.deepClone(this.form));
                 }
             })
         },
         handleClose(){
+            console.log('close');
             this.$refs.form.resetFields();
             this.$nextTick(()=>{
                 const form = this.deepClone(defaultForm);

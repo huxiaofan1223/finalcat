@@ -228,6 +228,13 @@ export default {
           }
         }
     },
+    watch:{
+      nowDatabase(val){
+        this.nowTable = '';
+        this.tableData = [];
+        this.fields = [];
+      }
+    },
     created(){
         window.$ = function(a){
           let arr = document.querySelectorAll(a);
@@ -312,7 +319,7 @@ export default {
           cancelButtonText: '取消',
           type: 'warning'
         }).then(async() => {
-          const sql = `drop table ${val}`;
+          const sql = `DROP TABLE ${this.formatVal(val)}`;
           await this.pageSelect(sql);
         })
       },
@@ -322,7 +329,8 @@ export default {
           cancelButtonText: '取消',
           type: 'warning'
         }).then(async() => {
-          const sql = `drop database ${val}`;
+          const sql = `DROP DATABASE ${this.formatVal(val)}`;
+          if(this.nowDatabase === this.chooseOption.database){this.nowDatabase = '';}
           await this.pageSelect(sql);
         })
       },
@@ -494,7 +502,7 @@ export default {
               label: "导入",
               onClick: async() => {
                 this.chooseOption = this.deepClone(option);
-                this.chooseOption.database = db;
+                this.nowDatabase = db;
                 this.handleUploadSql();
               }
             },
@@ -514,12 +522,17 @@ export default {
         return false;
       },
       handleFileChange(e){
-        console.log(e.target.files);
         var reader = new FileReader();
         reader.readAsText(e.target.files[0], "UTF-8");
-        reader.onload = (e2) => {
+        reader.onload = async (e2) => {
             const result = e2.target.result;
-            this.pageSelect(result);
+            try{
+              await this.pageSelect(result);
+            } catch(err){
+              console.log(err);
+            }
+            this.getDbTree(this.chooseOption);
+            document.getElementById("fileElem").value = '';
         }
       },
       handleUploadSql(){
@@ -720,7 +733,7 @@ export default {
       },
       handleCreateOptionSubmit(configForm){
           const flag = this.$refs.createOptionForm.getEditMode();
-          const newConfigForm = {...configForm}
+          const newConfigForm = this.deepClone(configForm);
           this.$store.dispatch('valideDbConfig',newConfigForm).then(res=>{
             if(!flag){
               this.$store.dispatch('addDbConfig',newConfigForm);
@@ -760,9 +773,7 @@ export default {
           await this.getFieldCommentType();
         } else {
           if(type === 'drop' || type === 'create' || type === 'alter'){
-            const option = {...this.chooseOption};
-            option.database = '';
-            this.getDbTree(option);
+            this.getDbTree(this.chooseOption);
           }
           this.msgSuccess(res.data.rows,sql);
         }
@@ -909,11 +920,11 @@ export default {
           this.loading = false;
           return;
         }
-        let {chooseOption} = this;
-        chooseOption.database = this.nowDatabase;
+        const options = this.deepClone(this.chooseOption);
+        options.database = this.nowDatabase;
         let data = {
           sql,
-          options:chooseOption
+          options
         }
         try{
           loading&& (this.loading = true);
