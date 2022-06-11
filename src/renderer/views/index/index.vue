@@ -22,7 +22,7 @@
                 </font>
               </span>
             </template>
-            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.stop.native="()=>{nowDatabase = item.Database}">
+            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.stop.native="chooseDatabase(item.Database)">
               <template slot="title">
                 <span style="margin-left:-30px;display:block;" @contextmenu="(e)=>{contextmenuDatabase(e,option,item.Database,item.children)}">
                   <img src="../../assets/database.png" width="12px">
@@ -57,7 +57,7 @@
           </div>
           <el-button type="primary" size="small" @click="handleSubmit">执行</el-button>
         </div>
-        <el-table ref="table" :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border>
+        <el-table ref="table" :data="tableData" style="overflow:auto;" height="0" v-loading="loading" border element-loading-text="loading...">
           <template>
             <el-table-column label="操作" width="50px" v-if="tableData.length!==0&&canDelete">
               <template slot-scope="scope">
@@ -227,13 +227,6 @@ export default {
               ]
           }
         }
-    },
-    watch:{
-      nowDatabase(val){
-        this.nowTable = '';
-        this.tableData = [];
-        this.fields = [];
-      }
     },
     created(){
         window.$ = function(a){
@@ -833,6 +826,15 @@ export default {
         this.$http.post('/dbtree',data).then(res=>{
           this.dbTree = res.data;
         })
+      },
+      chooseDatabase(database){
+        if(this.nowDatabase === database){
+          return;
+        }
+        this.nowDatabase = database;
+        this.nowTable='';
+        this.tableData = [];
+        this.fields = [];
       },
       async chooseTable(database,table){
         this.loading = true;
