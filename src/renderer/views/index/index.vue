@@ -823,7 +823,11 @@ export default {
       },
       async handleUpdate(key,value,row){
         try{
-          if(row[key] == value){
+          if(typeof row[key] === 'string'){
+            if(row[key] === value){
+              return;
+            } 
+          } else if(JSON.stringify(row[key]) === value){
             return;
           }
           const db = this.nowDatabase;

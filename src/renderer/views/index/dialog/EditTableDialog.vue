@@ -256,6 +256,7 @@ export default {
         },
         handleColumnChange(field){
             const index = this.form.fields.indexOf(field);
+            if(this.isEmpty(field.COLUMN_NAME)){this.$message.error('need column name');return;}
             if(this.hasNotChange()){return};
             const isInsert = field.insert;
             const db = this.createTableChooseDb;
@@ -270,7 +271,6 @@ export default {
                         sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} ADD ${fieldString} first`;
                     } else {
                         const beforeColumnName = bacConfig.fields[this.insertIndex].COLUMN_NAME;
-                        console.log(this.insertIndex);
                         sql = `ALTER TABLE ${this.formatVal(db)}.${this.formatVal(table)} ADD ${fieldString} after ${beforeColumnName}`;
                     }
                 }
