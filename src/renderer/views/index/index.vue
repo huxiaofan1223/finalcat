@@ -226,18 +226,6 @@ export default {
           }
         }
     },
-    created(){
-        window.$ = function(a){
-          let arr = document.querySelectorAll(a);
-          if(arr.length === 0){
-            return null
-          } else if(arr.length === 1){
-            return arr[0]
-          } else {
-            return arr;
-          }
-        }
-    },
     methods:{
       formatMinwidth(item){
         const {name,COLUMN_TYPE} = item;
@@ -602,7 +590,6 @@ export default {
             this.tableData = tempArr;
             this.tableData.push(newRowRes.data.rows[0]);
           },0)
-          $('.el-table__body-wrapper').scrollTop = 0;
           this.pageConfig.total = this.pageConfig.total+1;
         }
       },
@@ -781,7 +768,6 @@ export default {
         await this.pageSelect(this.sql);
       },
       getDbTree(option){
-        this.removeChooseClass();
         this.chooseOption = this.deepClone(option);
         let data = option;
         this.$http.post('/dbtree',data).then(res=>{
@@ -804,14 +790,6 @@ export default {
         let sql = `select * from ${this.nowTable}`;
         await this.preFixLimitSql(sql);
         await this.pageSelect(this.sql);
-      },
-      removeChooseClass(){
-        this.rollBackSpan = null;
-        let ss = $('.table-child') || [];
-        for(let item of ss){
-          item.classList.remove('choose-child');
-          item.classList.add('single-row');
-        }
       },
       async handleRemove(row){
         this.$confirm('是否删除此列？', '提示', {
