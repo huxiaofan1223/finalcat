@@ -256,7 +256,7 @@ export default {
             this.$refs['form'].validate((valid) => {
                 if (valid) {
                     const code = this.form2Sql(this.form);
-                    this.$SqlShowDialog({
+                    this.$ShowSqlDialog({
                         title: `新建表SQL`,
                         coexist: false,
                         code

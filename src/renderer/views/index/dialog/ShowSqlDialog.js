@@ -1,9 +1,9 @@
 import Vue from 'vue'
-import SqlShowDialog from './SqlShowDialog.vue'
+import ShowSqlDialog from './ShowSqlDialog.vue'
 let instance
 let iscoexist
-const PopupBox = Vue.extend(SqlShowDialog)
-SqlShowDialog.install = function (data) {
+const PopupBox = Vue.extend(ShowSqlDialog)
+ShowSqlDialog.install = function (data) {
   if (data.coexist) {
     iscoexist = new PopupBox({
       data
@@ -32,5 +32,5 @@ SqlShowDialog.install = function (data) {
     })
   }
 }
-export default SqlShowDialog
+export default ShowSqlDialog
 

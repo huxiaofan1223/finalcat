@@ -17,8 +17,8 @@ Vue.config.productionTip = false
 import utils from './utils/utils';
 Object.keys(utils).forEach(key => {Vue.prototype[key] = utils[key]});
 
-import SqlShowDialog from './views/index/dialog/SqlShowDialog';
-Vue.prototype.$SqlShowDialog = SqlShowDialog.install;
+import ShowSqlDialog from './views/index/dialog/ShowSqlDialog';
+Vue.prototype.$ShowSqlDialog = ShowSqlDialog.install;
 
 import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-light.css';

@@ -373,7 +373,7 @@ export default {
                 const sql = `show create table ${db}.${table}`;
                 const res = await this.resultSql(sql);
                 const code = res.data.rows[0]['Create Table'];
-                this.$SqlShowDialog({
+                this.$ShowSqlDialog({
                   title: `${db}.${table} 表结构`,
                   coexist: false,
                   code
@@ -455,7 +455,7 @@ export default {
                 const sql = `show create database ${db}`;
                 const res = await this.resultSql(sql);
                 const code = res.data.rows[0]['Create Database'];
-                this.$SqlShowDialog({
+                this.$ShowSqlDialog({
                   title: `${db} 数据库结构`,
                   coexist: false,
                   code
