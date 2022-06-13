@@ -76,7 +76,7 @@ export default {
             })
         },
         handleClose(){
-            console.log('close');
+            this.loading = false;
             this.$refs.form.resetFields();
             this.$nextTick(()=>{
                 const form = this.deepClone(defaultForm);

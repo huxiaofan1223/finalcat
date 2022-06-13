@@ -1,4 +1,5 @@
 import { Message } from "element-ui";
+
 const deepClone = (a) => {
     return JSON.parse(JSON.stringify(a));
 }
@@ -296,6 +297,10 @@ const columnType2Length = (val)=>{
     }
 }
 
+const getSqlType = (sql) => {
+    const type = sql.split(" ")[0].toLowerCase();
+    return type;
+}
 
 export default {
     deepClone,
@@ -309,5 +314,6 @@ export default {
     getDefaultCollateByCharset,
     isMultisql,
     isLimitSql,
-    isCountSql
+    isCountSql,
+    getSqlType
 }

@@ -109,6 +109,7 @@ export default {
         },
         handleClose(){
             this.$refs.form.resetFields();
+            this.loading = false;
             this.$nextTick(()=>{
                 const form = this.deepClone(defaultForm);
                 this.$emit('update:form',form);

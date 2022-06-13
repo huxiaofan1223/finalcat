@@ -1,5 +1,5 @@
 <template>
-  <div class="main" @click="clickParent">
+  <div class="main">
       <div class="app-left">
         <div class="justify-center" style="margin:10px 0;">
           <el-button size="mini" type="primary" @click.stop="showConfigDialog">新增连接</el-button>
@@ -72,9 +72,7 @@
                 <font color="#555555">{{fields[index].COLUMN_TYPE}}</font>
                 <p style="font-size:12px;color:red;line-height:14px;">{{fields[index].COLUMN_COMMENT}}</p>
               </template>
-              <template slot-scope="scope">
-                  <div class="table-child single-row" :title="scope.row[item.name]===null?'NULL':scope.row[item.name]" :style="{'color':scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete" @click.stop="clickRow" @keypress.enter.prevent="(e)=>handleUpdate(item.name,e.target.innerHTML,scope.row)">{{scope.row[item.name]===null?'NULL':scope.row[item.name]}}</div>
-              </template>
+              <template slot-scope="scope"><div class="table-child" :contenteditable="canDelete?'plaintext-only':''" v-html="scope.row[item.name]" @blur="(e)=>{handleUpdate(item.name,e.target.innerHTML,scope.row)}"></div></template>
             </el-table-column>
           </template>
         </el-table>
@@ -107,7 +105,7 @@
         :visible.sync="createDatabaseVisible"
         @handleCreateDatabaseSubmit="handleCreateDatabaseSubmit"
       />
-      <create-table-dialog 
+      <create-table-dialog
         ref="createTableForm" 
         :form.sync="createTableForm" 
         :createTableDialogVisible.sync="createTableDialogVisible" 
@@ -707,7 +705,6 @@ export default {
             sql = `create database ${name} collate ${collateVal}`;
             await this.pageSelect(sql);
           }
-          this.$refs.createDatabaseForm.stopLoading();
           this.$refs.createDatabaseForm.handleClose();
         }catch(err){
           console.log(err);
@@ -735,7 +732,6 @@ export default {
                 this.$store.dispatch('changeConfig',newConfigForm,this.editOptionIndex);
             }
             this.$message.success("操作成功");
-            this.$refs.createOptionForm.stopLoading();
             this.$refs.createOptionForm.handleClose();
           }).catch(err=>{
             this.$refs.createOptionForm.stopLoading();
@@ -783,41 +779,6 @@ export default {
         let start = (this.pageConfig.pageNum-1)*this.pageConfig.pageSize;
         this.sql = this.sql.replace(/ limit \d+,\d+$/g,(val)=>{ return ` limit ${start},${this.pageConfig.pageSize}`});
         await this.pageSelect(this.sql);
-      },
-      clickParent(){
-        if(this.rollBackSpan!==null&&$('.choose-child')!==null){
-          $('.choose-child').innerHTML = this.rollBackSpan;
-          this.rollBackSpan = null;
-        }
-        let ss = $('.table-child');
-        if(ss){
-          if(Object.prototype.toString.call(ss) === '[object NodeList]'){
-            for(let item of ss){
-              item.classList.remove('choose-child');
-              item.classList.add('single-row');
-            }
-          } else {
-              ss.classList.remove('choose-child');
-              ss.classList.add('single-row');
-          }
-        }
-      },
-      clickRow(e){
-        if(this.rollBackSpan!==null && $('.choose-child') && e.target.className.indexOf('choose-child') === -1&&$('.choose-child').innerHTML!==this.rollBackSpan){
-          $('.choose-child').innerHTML = this.rollBackSpan;
-          this.rollBackSpan = null;
-        } else {
-          this.rollBackSpan = e.target.innerHTML;
-        }
-        setTimeout(() => {
-          let ss = $('.table-child')
-          for(let item of ss){
-            item.classList.remove('choose-child');
-            item.classList.add('single-row');
-          }
-          e.target.classList.add('choose-child');
-          e.target.classList.remove('single-row');
-        }, 0);
       },
       getDbTree(option){
         this.removeChooseClass();
@@ -884,6 +845,9 @@ export default {
       },
       async handleUpdate(key,value,row){
         try{
+          if(row[key] == value){
+            return;
+          }
           const db = this.nowDatabase;
           const table = this.nowTable;
           let primaryKey = await this.getPrimaryKey(db,table);
@@ -891,16 +855,7 @@ export default {
           this.sql = sql;
           let updateRes = await this.resultSql(sql);
           this.msgSuccess(updateRes.data.rows,sql);
-          if(!updateRes.data.hasOwnProperty("fields")){
-            let ss = $('.table-child')
-            for(let item of ss){
-              item.classList.remove('choose-child');
-              item.classList.add('single-row');
-            }
-          } else {
-            console.log("update_success");
-            this.rollBackSpan = null;
-          }
+          row[key] = value;
         }
         catch(err){
           console.log("update_error");
@@ -940,7 +895,6 @@ export default {
         }
       },
       async handleSubmit(){
-        // let sql = this.monacoInstance.getValue();
         const {sql} = this;
         if(sql === ''){
           this.$message.error("请输入sql");
@@ -955,10 +909,6 @@ export default {
           this.preFixLimitSql(sql);
         }
         await this.pageSelect(sql);
-      },
-      getSqlType(sql){
-        const type = sql.split(" ")[0].toLowerCase();
-        return type;
       },
       async preFixLimitSql(sql){
         if(!this.isLimitSql(sql)){
@@ -1027,6 +977,7 @@ export default {
       font-size:13px;
       padding:5px;
       border:1px solid transparent;
+      transition:all .2s;
     }
     .single-row{
       overflow: hidden;
@@ -1041,6 +992,9 @@ export default {
       background:white;
     }
     .choose-child:focus{
+      border: 1px dashed #777777;
+    }
+    .table-child:focus{
       border: 1px dashed #777777;
     }
     ::v-deep.el-table td .cell{
