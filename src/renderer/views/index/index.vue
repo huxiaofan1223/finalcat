@@ -35,7 +35,7 @@
               </div>
               <template v-else>
                 <el-menu-item v-for="(table,tableIndex) in item.children" :key="tableIndex+''" :index="`${index3}-${index}-${tableIndex}`" @click.stop.native="chooseTable(item.Database,table)">
-                  <span style="margin-left:-40px;display:block;" @contextmenu="(e)=>{contextmenuTable(e,item.Database,table)}">
+                  <span style="margin-left:-40px;display:block;" @contextmenu="(e)=>{contextmenuTable(e,option,item.Database,table)}">
                     <img src="../../assets/table.png" width="10px">
                     {{table}}
                   </span>
@@ -309,7 +309,7 @@ export default {
           type: 'warning'
         }).then(async() => {
           const sql = `DROP DATABASE ${this.formatVal(val)}`;
-          if(this.nowDatabase === this.chooseOption.database){this.nowDatabase = '';}
+          if(this.nowDatabase === val){this.nowDatabase = '';}
           await this.pageSelect(sql);
         })
       },
@@ -349,7 +349,7 @@ export default {
         });
         return false;
       },
-      async contextmenuTable(event,db,table){
+      async contextmenuTable(event,option,db,table){
         this.$contextmenu({
           items: [
             {
@@ -403,6 +403,21 @@ export default {
                       console.log('getFieldsError',err);
                       this.$refs.editTableForm.stopLoading();
                     })
+              }
+            },
+            {
+              icon: "el-icon-download",
+              label: "导出",
+              onClick: () => {
+                const newOption = this.deepClone(option);
+                newOption.database = db;
+                delete newOption.name;
+                const today = new Date().toJSON().substring(0,10).replace(/-/g,'');
+                const homeDir = require('os').homedir();
+                const desktopDir = `${homeDir}/Desktop`;
+                const dumpToFile = `${desktopDir}/${db}_${table}_${today}.sql`
+                mysqldump({connection: newOption,dumpToFile,dump:{tables:[table]}});
+                this.$message.success('导出成功,文件保存在桌面！');
               }
             },
             {
