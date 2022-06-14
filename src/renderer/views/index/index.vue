@@ -71,7 +71,7 @@
                 <font color="#555555">{{fields[index].COLUMN_TYPE}}</font>
                 <p style="font-size:12px;color:red;line-height:14px;">{{fields[index].COLUMN_COMMENT}}</p>
               </template>
-              <template slot-scope="scope"><div class="table-child" :contenteditable="canDelete?'plaintext-only':''" v-html="scope.row[item.name]" @blur="(e)=>{handleUpdate(item.name,e.target.innerHTML,scope.row)}"></div></template>
+              <template slot-scope="scope"><div class="table-child single-row" :contenteditable="canDelete?'plaintext-only':false" @focus="handleFocus" v-text="scope.row[item.name]" @blur="(e)=>{handleUpdate(e,item.name,e.target.innerText,scope.row)}"></div></template>
             </el-table-column>
           </template>
         </el-table>
@@ -850,7 +850,11 @@ export default {
           }
         }).catch(() => {});
       },
-      async handleUpdate(key,value,row){
+      handleFocus(e){
+        e.target.classList.remove('single-row');
+      },
+      async handleUpdate(e,key,value,row){
+        e.target.classList.add('single-row');
         try{
           if(typeof row[key] === 'string'){
             if(row[key] === value){
@@ -862,7 +866,7 @@ export default {
           const db = this.nowDatabase;
           const table = this.nowTable;
           let primaryKey = await this.getPrimaryKey(db,table);
-          let sql = `UPDATE ${this.formatVal(db)}.${this.formatVal(table)} SET ${this.formatVal(key)} = '${this.escape(value)}' WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
+          let sql = `UPDATE ${this.formatVal(db)}.${this.formatVal(table)} SET ${this.formatVal(key)} = '${this.escape(value.replace(/\n$/,''))}' WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
           this.sql = sql;
           let updateRes = await this.resultSql(sql);
           this.msgSuccess(updateRes.data.rows,sql);
