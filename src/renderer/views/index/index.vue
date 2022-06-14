@@ -402,14 +402,12 @@ export default {
                         const {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT,insert} = item;
                         return {key,COLUMN_NAME,DATA_TYPE,length,COLUMN_DEFAULT,COLLATION_NAME,IS_NULLABLE,EXTRA,AI,COLUMN_COMMENT,insert};
                       })
-                      const before = Date.now();
                       setTimeout(()=>{
                         this.editTableForm = {tableName,fields,charset,collateVal,engine,comment};
                         this.$forceUpdate();
                         this.$refs.editTableForm.stopLoading();
                         this.$nextTick(()=>{
                           this.$refs.editTableForm.setBacConfig();
-                          console.log(Date.now()-before);
                         })
                       },50)
                     }).catch(err=>{
@@ -605,7 +603,6 @@ export default {
         const insertSql = `INSERT INTO ${nowDatabase}.${nowTable} VALUES (${values})`;
         const sql = insertSql.replace(/,"CURRENT_TIMESTAMP"/g,',CURRENT_TIMESTAMP');
         const addRes = await this.resultSql(sql);
-        // this.$message.success('affectedRows Count:'+addRes.data.rows.affectedRows);
         this.msgSuccess(addRes.data.rows,sql);
         
         const newRowSql = `select * from ${nowDatabase}.${nowTable} where ${pri}=${addRes.data.rows.insertId}`;
@@ -655,33 +652,43 @@ export default {
           console.log('getFields error',err);
         }
       },
-      async getFieldCommentType(){
-        await this.updateCanDelete();
-        let obj = {};
-        for(let field of this.fields){
-          let key = `${field.db}.${field.table}`;
-          if(!obj.hasOwnProperty(key)){
-            let t = await this.getFields(field.db,field.table);
-            obj[key] = t;
-          }
-        }
-        console.log(obj);
-        this.filterDetail2Field(obj);
+      // 对象数组去重
+      objArrDeWeight(arr){
+        let map = new Map();
+        for (let item of arr) {
+            if (!map.has(JSON.stringify(item))) {
+                map.set(JSON.stringify(item),item);
+            };
+        };
+        return [...map.values()];
       },
-      filterDetail2Field(obj){
-        const arr = this.deepClone(this.fields);
-        for(let t in obj){
-          for(let rowItem of obj[t]){
-              arr.forEach((field,index)=>{
-                if(field.name === rowItem.COLUMN_NAME && field.db === rowItem.TABLE_SCHEMA && field.table === rowItem.TABLE_NAME){
-                  arr[index] = {...field,...rowItem};
-                }
-              })
-          }
+      async getFieldCommentType(fields){
+        const db_table_list = fields.map(({db,table})=>{return {db,table}});
+        const db_table_list_deweight = this.objArrDeWeight(db_table_list);
+        console.log(db_table_list_deweight);
+        let sqlColumns = [];
+        for(const field of db_table_list_deweight){
+          let t = await this.getFields(field.db,field.table);
+          sqlColumns = [...sqlColumns,...t];
         }
-        this.fields = arr;
-        console.log('fields',this.fields);
-        this.$forceUpdate();
+        console.log({sqlColumns,fields});
+        return this.finalFields(sqlColumns,fields);
+      },
+      finalFields(sqlColumns,fields){
+        const newFields = [];
+        for(const rowItem of sqlColumns){
+          fields.forEach((field)=>{
+              if(field.name === rowItem.COLUMN_NAME && field.db === rowItem.TABLE_SCHEMA && field.table === rowItem.TABLE_NAME){
+                newFields.push({...field,...rowItem});
+              }
+          })
+        }
+        console.log(newFields);
+        if(newFields.length === 0){
+          return fields;
+        } else {
+          return newFields;
+        }
       },
       showConfigDialog(){
         this.createOptionVisible = true;
@@ -761,26 +768,30 @@ export default {
         const isMultisql = this.isMultisql(sql);
         if(!isMultisql&&res.data.hasOwnProperty("fields")){
           console.log('tableData',res.data.rows);
-          this.tableData = [];
-          setTimeout(()=>{
-            this.tableData = res.data.rows;
-          },0)
-          let equalFieldsArr = this.deepClone(this.fields);
-          equalFieldsArr.forEach(item=>{
-            delete item.COLUMN_COMMENT;
-            delete item.COLUMN_TYPE;
-          })
-          if(!this.equals(equalFieldsArr,res.data.fields)){
-            this.fields = res.data.fields;
+          this.tableData = res.data.rows;
+          if(type === 'select'){
+            const isFieldsChange = this.isFieldsChange(this.fields,res.data.fields);
+            console.log(isFieldsChange);
+            if(isFieldsChange){
+              const fields = res.data.fields;
+              this.fields = await this.getFieldCommentType(fields);
+              await this.updateCanDelete();
+            }
           }
-          if(type === 'select')
-          await this.getFieldCommentType();
         } else {
           if(type === 'drop' || type === 'create' || type === 'alter'){
             this.getDbTree(this.chooseOption);
           }
           this.msgSuccess(res.data.rows,sql);
         }
+      },
+      arrIncludes(fatherArr,childArr) {
+        return childArr.every(v => fatherArr.includes(v));
+      },
+      isFieldsChange(nowFields,newFields){
+        const nowFieldsDbTableColumnList = nowFields.map(item=>`${item.db}${item.table}${item.name}`);
+        const newFieldsDbTableColumnList = newFields.map(item=>`${item.db}${item.table}${item.name}`);
+        return !this.arrIncludes(nowFieldsDbTableColumnList,newFieldsDbTableColumnList);
       },
       async handleSizeChange(val){
         this.pageConfig.pageSize = val;
@@ -880,7 +891,6 @@ export default {
           } catch(err){
             isSetEmpty = false;
           }
-          console.log(isSetEmpty);
           const db = this.nowDatabase;
           const table = this.nowTable;
           let primaryKey = await this.getPrimaryKey(db,table);
