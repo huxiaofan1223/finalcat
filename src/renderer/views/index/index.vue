@@ -22,7 +22,7 @@
                 </font>
               </span>
             </template>
-            <el-submenu v-for="item in dbTree" :key="`${option.host}${option.port}${item.Database}`" :index="`${option.host}${option.port}${item.Database}`" @click.stop.native="chooseDatabase(option,item.Database)">
+            <el-submenu v-for="item in dbTreeMap[`${option.host}${option.port}`]" :key="`${option.host}${option.port}${item.Database}`" :index="`${option.host}${option.port}${item.Database}`" @click.stop.native="chooseDatabase(option,item.Database)">
               <template slot="title">
                 <span style="margin-left:-30px;display:block;" @contextmenu="(e)=>{contextmenuDatabase(e,option,item.Database,item.children)}">
                   <img src="../../assets/database.png" width="12px">
@@ -71,7 +71,7 @@
                 <font color="#555555">{{fields[index].COLUMN_TYPE}}</font>
                 <p style="font-size:12px;color:red;line-height:14px;">{{fields[index].COLUMN_COMMENT}}</p>
               </template>
-              <template slot-scope="scope"><div class="table-child single-row" :contenteditable="canDelete?'plaintext-only':false" @focus="handleFocus" v-text="scope.row[item.name]" @blur="(e)=>{handleUpdate(e,item.name,e.target.innerText,scope.row)}"></div></template>
+              <template slot-scope="scope"><div class="table-child single-row" :style="{color:scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete?'plaintext-only':false" @focus="handleFocus" v-text="scope.row[item.name]===null?'NULL':scope.row[item.name]" @blur="(e)=>{handleUpdate(e,item.name,e.target.innerText,scope.row)}"></div></template>
             </el-table-column>
           </template>
         </el-table>
@@ -133,6 +133,7 @@ import CreateDatabaseDialog from './dialog/CreateDatabaseDialog';
 import mysqldump from 'mysqldump';
 import MonacoSqlEditor from './MonacoSqlEditor'
 let bacDatabse = {};
+let bacCellText = '';
 export default {
     components:{
       EditTableDialog,
@@ -147,6 +148,9 @@ export default {
           nowDatabase:"",
           nowTable:"",
           dbTree:[],
+          dbTreeMap:{
+            
+          },
           tableData: [],
           fields:[],
           loading:false,
@@ -793,9 +797,11 @@ export default {
       },
       getDbTree(option,cb){
         this.chooseOption = this.deepClone(option);
+        const {host,port} = option;
         let data = option;
         this.$http.post('/dbtree',data).then(res=>{
-          this.dbTree = res.data;
+          this.dbTreeMap[`${host}${port}`] = res.data;
+          this.$forceUpdate();
           cb&&cb();
         }).catch(err=>{
           cb&&cb(err);
@@ -852,28 +858,41 @@ export default {
       },
       handleFocus(e){
         e.target.classList.remove('single-row');
+        bacCellText = e.target.innerText;
       },
       async handleUpdate(e,key,value,row){
         e.target.classList.add('single-row');
+        let isSetEmpty = false;
         try{
-          if(typeof row[key] === 'string'){
-            if(row[key] === value){
-              return;
-            } 
-          } else if(JSON.stringify(row[key]) === value){
+          if(bacCellText === e.target.innerText){
+            console.log('cell not change');
             return;
           }
+          try{
+            if(value.toLowerCase()==='null'){
+              await this.$confirm('是否设为空', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '否(设为字符串NULL)',
+                type: 'warning'
+              })
+              isSetEmpty = true;
+            }
+          } catch(err){
+            isSetEmpty = false;
+          }
+          console.log(isSetEmpty);
           const db = this.nowDatabase;
           const table = this.nowTable;
           let primaryKey = await this.getPrimaryKey(db,table);
-          let sql = `UPDATE ${this.formatVal(db)}.${this.formatVal(table)} SET ${this.formatVal(key)} = '${this.escape(value.replace(/\n$/,''))}' WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
+          const newVal = isSetEmpty?'NULL':`'${this.escape(value.replace(/\n$/,''))}'`;
+          let sql = `UPDATE ${this.formatVal(db)}.${this.formatVal(table)} SET ${this.formatVal(key)} = ${newVal} WHERE ${this.formatVal(primaryKey)} = ${row[primaryKey]}`;
           this.sql = sql;
           let updateRes = await this.resultSql(sql);
           this.msgSuccess(updateRes.data.rows,sql);
-          row[key] = value;
+          row[key] = isSetEmpty?null:value;
         }
         catch(err){
-          console.log("update_error");
+          console.log("update_error",err);
         }
       },
       async getPrimaryKey(db,table){
