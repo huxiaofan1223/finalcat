@@ -29,8 +29,8 @@ export async function getDbTree(options){
 }
 
 const server = function(){
-  app.use(express.json())
-  app.use(express.urlencoded({ extended: true }))
+  app.use(express.json({limit: '50000mb'}))
+  app.use(express.urlencoded({ limit: '50000mb',extended: true }))
   app.all("*",function(req,res,next){
     res.header("Access-Control-Allow-Origin","*");
     res.header("Access-Control-Allow-Headers","content-type");

@@ -12,7 +12,7 @@
           default-active="1"
           class="el-menu-vertical-demo"
           :unique-opened="true">
-          <el-submenu v-for="(option,index3) in $store.state.Db.dbList" :key="index3" :index="index3+''" @click.stop.native="(e)=>{getDbTree(option)}">
+            <el-submenu v-for="(option,index3) in $store.state.Db.dbList" :key="`${option.host}${option.port}`" :index="`${option.host}${option.port}`" @click.stop.native="(e)=>{handleChooseOption(option)}">
             <template slot="title">
               <span style="margin-left:-15px;display:block;" @contextmenu="(e)=>{handleContextOption(e,option,index3)}">
                 <i class="el-icon-menu" style="font-size:13px;width:20px;margin-right:0;"></i>
@@ -22,19 +22,18 @@
                 </font>
               </span>
             </template>
-            <el-submenu v-for="(item,index) in dbTree" :key="index+''" :index="`${index3}-${index}`" @click.stop.native="chooseDatabase(item.Database)">
+            <el-submenu v-for="item in dbTree" :key="`${option.host}${option.port}${item.Database}`" :index="`${option.host}${option.port}${item.Database}`" @click.stop.native="chooseDatabase(option,item.Database)">
               <template slot="title">
                 <span style="margin-left:-30px;display:block;" @contextmenu="(e)=>{contextmenuDatabase(e,option,item.Database,item.children)}">
                   <img src="../../assets/database.png" width="12px">
                   {{item.Database}}
                 </span>
               </template>
-
               <div v-if="item.children.length===0" class="center" style="padding:5px 0;">
                 empty
               </div>
               <template v-else>
-                <el-menu-item v-for="(table,tableIndex) in item.children" :key="tableIndex+''" :index="`${index3}-${index}-${tableIndex}`" @click.stop.native="chooseTable(item.Database,table)">
+                <el-menu-item v-for="table in item.children" :key="`${option.host}${option.port}${item.Database}${table}`" :index="`${option.host}${option.port}${item.Database}${table}`" @click.stop.native="chooseTable(option,item.Database,table)">
                   <span style="margin-left:-40px;display:block;" @contextmenu="(e)=>{contextmenuTable(e,option,item.Database,table)}">
                     <img src="../../assets/table.png" width="10px">
                     {{table}}
@@ -144,6 +143,7 @@ export default {
     },
     data(){
         return {
+          databaseLoading:false,
           nowDatabase:"",
           nowTable:"",
           dbTree:[],
@@ -227,6 +227,12 @@ export default {
         }
     },
     methods:{
+      handleChooseOption(option){
+        this.databaseLoading = true;
+        this.getDbTree(option,(err)=>{
+          this.databaseLoading = false;
+        });
+      },
       formatMinwidth(item){
         const {name,COLUMN_TYPE} = item;
         return `${(name+COLUMN_TYPE).length*10}px`;
@@ -321,6 +327,9 @@ export default {
               icon: "el-icon-plus",
               label: "新建数据库",
               onClick: () => {
+                if(this.nowDatabase){
+                  this.nowDatabase = '';
+                }
                 this.createDatabaseVisible = true;
               }
             },
@@ -782,26 +791,31 @@ export default {
         this.sql = this.sql.replace(/ limit \d+,\d+$/g,(val)=>{ return ` limit ${start},${this.pageConfig.pageSize}`});
         await this.pageSelect(this.sql);
       },
-      getDbTree(option){
+      getDbTree(option,cb){
         this.chooseOption = this.deepClone(option);
         let data = option;
         this.$http.post('/dbtree',data).then(res=>{
           this.dbTree = res.data;
+          cb&&cb();
+        }).catch(err=>{
+          cb&&cb(err);
         })
       },
-      chooseDatabase(database){
+      chooseDatabase(option,database){
         if(this.nowDatabase === database){
           return;
         }
+        this.chooseOption = option;
         this.nowDatabase = database;
         this.nowTable='';
         this.tableData = [];
         this.fields = [];
       },
-      async chooseTable(database,table){
+      async chooseTable(option,database,table){
         this.loading = true;
         this.nowTable = table;
         this.nowDatabase = database;
+        this.chooseOption = option;
         let sql = `select * from ${this.nowTable}`;
         await this.preFixLimitSql(sql);
         await this.pageSelect(this.sql);
@@ -908,6 +922,7 @@ export default {
         await this.pageSelect(sql);
       },
       async preFixLimitSql(sql){
+        this.pageConfig.pageNum = 1;
         if(!this.isLimitSql(sql)){
           let total = await this.getSqlRowCount(sql);
           this.pageConfig.total = total;
