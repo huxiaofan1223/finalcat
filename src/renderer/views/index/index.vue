@@ -11,7 +11,7 @@
         <el-menu
           default-active="1"
           class="el-menu-vertical-demo"
-          :unique-opened="true">
+          :unique-opened="false">
             <el-submenu v-for="(option,index3) in $store.state.Db.dbList" :key="`${option.host}${option.port}`" :index="`${option.host}${option.port}`" @click.stop.native="(e)=>{handleChooseOption(option)}">
             <template slot="title">
               <span style="margin-left:-15px;display:block;" @contextmenu="(e)=>{handleContextOption(e,option,index3)}">
