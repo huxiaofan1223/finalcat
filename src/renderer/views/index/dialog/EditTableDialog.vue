@@ -418,10 +418,10 @@ export default {
     background:red;
 }
 .form{
-    ::v-deep .el-form-item--mini.el-form-item, .el-form-item--small.el-form-item{
+    :deep(.el-form-item--mini.el-form-item, .el-form-item--small.el-form-item){
         margin-bottom:15px;
     }
-    ::v-deep .el-input.is-disabled .el-input__inner{
+    :deep(.el-input.is-disabled .el-input__inner){
         color:#777777;
     }
 }

@@ -288,7 +288,7 @@ export default {
 
 <style scoped lang="scss">
 .form{
-    ::v-deep .el-form-item--mini.el-form-item, .el-form-item--small.el-form-item{
+    :deep(.el-form-item--mini.el-form-item, .el-form-item--small.el-form-item){
         margin-bottom:15px;
     }
 }

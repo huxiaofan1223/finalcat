@@ -23,7 +23,7 @@
         <el-form-item label="账号" prop="user">
         <el-input size="small" v-model="form.user" placeholder="账号"></el-input>
         </el-form-item>
-        <el-form-item label="密码" prop="password">
+        <el-form-item label="密码">
         <el-input size="small" type="password" v-model="form.password" placeholder="密码"></el-input>
         </el-form-item>
     </el-form>

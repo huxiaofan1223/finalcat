@@ -565,7 +565,8 @@ export default {
         const sql = `show create table ${db}.${table}`;
         const res = await this.resultSql(sql);
         const createDetail = res.data.rows[0]['Create Table'];
-        const matchResult = createDetail.match(/\) ENGINE=(.*?)( AUTO_INCREMENT=\d+)? DEFAULT CHARSET=(.*?)( COLLATE=(.*?))?( COMMENT='(.*)'$)?$/);
+        const matchResult = createDetail.match(/\) ENGINE=(.*?)( AUTO_INCREMENT=\d+)? DEFAULT CHARSET=([a-zA-Z0-9]+)( COLLATE=(.*?))?( COMMENT='(.*)'$)?.*?$/);
+        console.log(matchResult);
         const engine = matchResult[1];
         const charset = matchResult[3];
         const collateVal = matchResult[5]||this.getDefaultCollateByCharset(charset);
@@ -1001,14 +1002,14 @@ export default {
     width:260px;
     overflow: auto;
     overflow-x:hidden;
-    ::v-deep.el-menu{
+    :deep(.el-menu){
       border-right:none;
     }
-    ::v-deep.el-menu-item{
+    :deep(.el-menu-item){
       height:30px;
       line-height: 30px;
     }
-    ::v-deep.el-submenu__title{
+    :deep(.el-submenu__title){
       height:30px;
       line-height: 30px;
     }
@@ -1042,29 +1043,29 @@ export default {
     .table-child:focus{
       border: 1px dashed #777777;
     }
-    ::v-deep.el-table td .cell{
+    :deep(.el-table td .cell){
       padding-left:0;
       padding-right:0;
       line-height:18px;
     }
-    ::v-deep.el-table th .cell{
+    :deep(.el-table th .cell){
       padding-left:0;
       padding-right:0;
       line-height:18px;
     }
-    ::v-deep .el-table__body{
+    :deep(.el-table__body){
       padding-bottom:15px;
     }
-    ::v-deep.el-table td{
+    :deep(.el-table td){
       padding: 0!important;
     }
-    ::v-deep.el-table th{
+    :deep(.el-table th){
       padding: 0!important;
     }
-    ::v-deep.el-table::before{
+    :deep(.el-table::before){
       height:0;
     }
-    ::v-deep.el-table th>.cell{
+    :deep(.el-table th>.cell){
       padding:8px 5px;
       font-weight: normal;
       color:#222222;
