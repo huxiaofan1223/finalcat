@@ -31,18 +31,19 @@
                     </el-col>
                 </el-row>
                 <el-row style="padding-bottom:10px;">
-                    <el-col :span="4">名字</el-col>
+                    <el-col :span="3">名字</el-col>
                     <el-col :span="2">类型</el-col>
                     <el-col :span="2">长度</el-col>
-                    <el-col :span="3">默认</el-col>
+                    <el-col :span="2">默认</el-col>
                     <el-col :span="3">排序规则</el-col>
                     <el-col :span="3">属性</el-col>
                     <el-col :span="1">可为空</el-col>
+                    <el-col :span="2">索引</el-col>
                     <el-col :span="1">自增</el-col>
                     <el-col :span="4">备注</el-col>
                 </el-row>
                 <el-row v-for="(item,index) in form.fields" :key="item.key" style="text-align:center;">
-                    <el-col style="padding-right:10px;" :span="4">
+                    <el-col style="padding-right:10px;" :span="3">
                         <el-form-item :prop="'fields.' + index + '.COLUMN_NAME'" :rules="{required: true, message: '字段名不能为空', trigger: 'blur'}">
                             <el-input v-model="item.COLUMN_NAME" placeholder="名字"></el-input>
                         </el-form-item>
@@ -57,7 +58,7 @@
                             <el-input v-model="item.length" placeholder="长度"></el-input>
                         </el-form-item>
                     </el-col>
-                    <el-col style="padding-right:10px;" :span="3">
+                    <el-col style="padding-right:10px;" :span="2">
                         <el-form-item>
                             <el-select v-model="item.COLUMN_DEFAULT"
                                 filterable
@@ -89,6 +90,18 @@
                             <el-checkbox v-model="item.IS_NULLABLE" true-label="YES" false-label="NO" placeholder="可为空"></el-checkbox>
                         </el-form-item>
                     </el-col>
+                    <el-col style="padding-right:10px;" :span="2">
+                        <el-form-item>
+                            <el-select v-model="item.index" placeholder="索引">
+                                <el-option label="---" value=""></el-option>
+                                <el-option label="PRIMARY" value="PRIMARY"></el-option>
+                                <el-option label="UNIQUE" value="UNIQUE"></el-option>
+                                <el-option label="INDEX" value="INDEX"></el-option>
+                                <el-option label="FULLTEXT" value="FULLTEXT"></el-option>
+                                <el-option label="SPATIAL" value="SPATIAL"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
                     <el-col style="padding-right:10px;" :span="1">
                         <el-form-item>
                             <el-checkbox v-model="item.AI" placeholder="自增"></el-checkbox>
@@ -116,6 +129,9 @@
                 <el-button @click="handleSee" size="mini">查看SQL</el-button>
                 <el-button type="primary" native-type="submit" @click="handleSubmit" size="mini">确 定</el-button>
             </span>
+
+
+            <indexes-dialog :visible.sync="indexDialogVisible" :indexType="indexType"></indexes-dialog>
       </el-dialog>
 
 </template>
@@ -125,6 +141,7 @@
 import TypeSelect from '../../components/TypeSelect';
 import CollateSelect from '../../components/CollateSelect';
 import EngineSelect from '../../components/EngineSelect';
+import IndexesDialog from './IndexesDialog';
 const defaultForm = {
     tableName:'',
     comment:'',
@@ -142,7 +159,8 @@ const defaultForm = {
             IS_NULLABLE:'NO',
             EXTRA:'',
             AI:false,
-            COLUMN_COMMENT:''
+            COLUMN_COMMENT:'',
+            index:''
         }
     ]
 }
@@ -150,7 +168,8 @@ export default {
     components:{
         TypeSelect,
         CollateSelect,
-        EngineSelect
+        EngineSelect,
+        IndexesDialog
     },
     props:{
         form:{
@@ -173,7 +192,9 @@ export default {
                     { required: true, message: '请输入表名', trigger: 'blur' }
                 ]
             },
-            loading:false
+            loading:false,
+            indexDialogVisible:true,
+            indexType:''
         }
     },
     methods:{
