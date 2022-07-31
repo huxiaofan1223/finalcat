@@ -92,7 +92,7 @@
                     </el-col>
                     <el-col style="padding-right:10px;" :span="2">
                         <el-form-item>
-                            <el-select v-model="item.index" placeholder="索引">
+                            <el-select v-model="item.index" placeholder="索引" @change="handleIndexChange(item)" @focus="handleSaveBak">
                                 <el-option label="---" value=""></el-option>
                                 <el-option label="PRIMARY" value="PRIMARY"></el-option>
                                 <el-option label="UNIQUE" value="UNIQUE"></el-option>
@@ -131,9 +131,16 @@
             </span>
 
 
-            <indexes-dialog :visible.sync="indexDialogVisible" :indexType="indexType"></indexes-dialog>
+            <indexes-dialog 
+                :visible.sync="indexDialogVisible" 
+                :indexType="indexType"
+                :indexType2.sync="indexType2"
+                :indexGroup="indexGroup"
+                :indexName.sync="indexName"
+                @submit="handleIndexSubmit"
+                @handleRecoveryBak="handleRecoveryBak">
+            </indexes-dialog>
       </el-dialog>
-
 </template>
 
 
@@ -160,10 +167,14 @@ const defaultForm = {
             EXTRA:'',
             AI:false,
             COLUMN_COMMENT:'',
-            index:''
+            index:'',
+            indexName:'',
+            indexType:'single',
+            concatKey:''
         }
     ]
 }
+let bakForm = null;
 export default {
     components:{
         TypeSelect,
@@ -193,12 +204,77 @@ export default {
                 ]
             },
             loading:false,
-            indexDialogVisible:true,
-            indexType:''
+            indexDialogVisible:false,
+            indexType:'',
+            indexType2:'single',
+            indexGroup:[],
+            indexItem:null,
+            indexName:''
         }
     },
+    created(){
+        Array.prototype.remove = function(val) { 
+            var index = this.indexOf(val); 
+            if (index > -1) { 
+                this.splice(index, 1); 
+            }
+            return this;
+        };
+    },
     methods:{
-        elChangeExForArray (index1, index2, array) {
+        handleSaveBak(){
+            console.log('focus');
+            bakForm = this.deepClone(this.form);
+        },
+        handleRecoveryBak(){
+            this.$emit('update:form',bakForm);
+        },
+        handleIndexSubmit([indexName,indexType,concatKey]){
+            console.log(concatKey);
+            console.log(this.indexItem);
+            console.log('before',this.form.fields);
+            this.indexItem.indexName = indexName;
+            this.indexItem.indexType = indexType;
+            const concatKeyArr = concatKey.split(',');
+            this.indexItem.concatKey = [...concatKeyArr,this.indexItem.COLUMN_NAME];
+            if(indexType === 'multi'){
+                this.form.fields.forEach(item=>{
+                    if(concatKeyArr.includes(item.COLUMN_NAME)){
+                        item.indexType = 'multi';
+                        item.concatKey = [...new Set([...concatKeyArr,this.indexItem.COLUMN_NAME])];
+                        item.indexName = indexName;
+                    }
+                })
+            } else {
+                this.form.fields.forEach(item=>{
+                    if(item.concatKey.includes(this.indexItem.COLUMN_NAME)){
+                        item.concatKey.remove(this.indexItem.COLUMN_NAME);
+                        item.indexType = item.concatKey.length <2 ?'single':'multi';
+                    }
+                })
+            }
+            console.log(this.form.fields);
+        },
+        handleIndexChange(item){
+            this.$refs['form'].validate((valid) => {
+                if(valid){
+                    if(item.index===''){return}
+                    this.indexDialogVisible = true;
+                    this.indexType = item.index;
+                    const singleArr = this.form.fields.filter(item2=>item2.index===item.index&&!this.equals(item2,item)&&item2.indexType ==='single').map(item3=>item3.COLUMN_NAME);
+                    const multiArr = [...new Set(this.form.fields.filter(item2=>item2.index===item.index&&!this.equals(item2,item)&&item2.indexType ==='multi').map(item3=>item3.concatKey.join(',')))];
+                    this.indexGroup = [...singleArr,...multiArr];
+                    console.log(this.form.fields);
+                    console.log(this.indexGroup);
+                    this.indexItem = item;
+                    this.indexType2 = 'single';
+                    this.indexName = '';
+                } else {
+                    item.index = '';
+                }
+            })
+        },
+        elChangeExForArray(index1, index2, array) {
             let temp = array[index1]
             array[index1] = array[index2]
             array[index2] = temp
@@ -267,11 +343,23 @@ export default {
             const tableName = form.tableName;
             const fieldString = form.fields.map(item=>this.item2Field(item)).join(',\n');
             const primaryString = this.getPrimaryString(form.fields);
+            const indexString = this.getIndexString(form.fields);
             const db = this.createTableChooseDb;
             const engine = `ENGINE = ${this.form.engine } `;
             const collate = this.isEmpty(this.form.collateVal)?'':`COLLATE ${this.form.collateVal} `;
             const comment = this.isEmpty(this.form.comment)?'':`COMMENT = '${this.form.comment}'`;
-            return `CREATE TABLE ${this.formatVal(db)}.${this.formatVal(tableName)} (\n${fieldString}${primaryString}\n) ${engine}${collate}${comment}`;
+            return `CREATE TABLE ${this.formatVal(db)}.${this.formatVal(tableName)} (\n${fieldString}${primaryString}${indexString}\n) ${engine}${collate}${comment}`;
+        },
+        getIndexString(oldFields){
+            const fields = oldFields.filter(item=>item.index!=='');
+            const singleArr = fields.filter(item=>item.indexType==='single');
+            const singleString = singleArr.length === 0 ? '':',\n' + singleArr.map(item=>{return `${item.index} ${this.isEmpty(item.indexName)?'':this.formatVal(item.indexName)+' '}(${this.formatVal(item.COLUMN_NAME)})`}).join(',');
+            const multiArr = fields.filter(item=>item.indexType==='multi'&&item.concatKey!=='');
+            const multiString = multiArr.length === 0 ? '':',\n' + [...new Set(multiArr.map(item=>{return `${item.index} ${this.isEmpty(item.indexName)?'':this.formatVal(item.indexName)+' '}(${item.concatKey.map(key=>this.formatVal(key))})`}))].join(',');
+            console.log(singleString);
+            console.log(multiString);
+            const result = singleString+multiString;
+            return result;
         },
         handleSee(){
             this.$refs['form'].validate((valid) => {
@@ -296,7 +384,11 @@ export default {
                 IS_NULLABLE:'NO',
                 EXTRA:'',
                 AI:false,
-                COLUMN_COMMENT:''
+                COLUMN_COMMENT:'',
+                index:'',
+                indexName:'',
+                indexType:'single',
+                concatKey:''
             }
             this.form.fields.push(field);
         },

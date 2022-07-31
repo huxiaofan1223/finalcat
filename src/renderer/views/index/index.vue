@@ -201,7 +201,11 @@ export default {
                       IS_NULLABLE:'NO',
                       EXTRA:'',
                       AI:false,
-                      COLUMN_COMMENT:''
+                      COLUMN_COMMENT:'',
+                      index:'',
+                      indexName:'',
+                      indexType:'single',
+                      concatKey:''
                   }
               ]
           },
