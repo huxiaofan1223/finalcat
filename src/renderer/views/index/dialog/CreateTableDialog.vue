@@ -443,7 +443,7 @@ export default {
                 const removeConcatKeyArr = subSet(item.concatKey,nameArr);
                 removeConcatKeyArr.forEach(removeItem=>{
                     item.concatKey.remove(removeItem);
-                    item.concatKeyIndexArr = item.concatKey.map(item=>nameArr.indexOf(item));
+                    item.concatKeyIndexArr = item.concatKey.map(item=>this.form.fields[nameArr.indexOf(item)].key);
                     item.indexType = item.concatKey.length<2?'single':'multi';
                 })
             })
