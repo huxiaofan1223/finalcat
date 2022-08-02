@@ -205,7 +205,8 @@ export default {
                       index:'',
                       indexName:'',
                       indexType:'single',
-                      concatKey:''
+                      concatKey:'',
+                      concatKeyIndexArr:[]
                   }
               ]
           },

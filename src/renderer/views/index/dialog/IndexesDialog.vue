@@ -9,7 +9,7 @@
             <el-form-item label="索引类型">
                 <el-radio-group v-model="indexType3" @change="handleChange">
                     <el-radio label="single">单列索引</el-radio>
-                    <el-radio label="multi">复合索引</el-radio>
+                    <el-radio label="multi" :disabled="indexGroup.length===0">复合索引</el-radio>
                 </el-radio-group>
 
             </el-form-item>
