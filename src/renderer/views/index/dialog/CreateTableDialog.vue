@@ -102,12 +102,12 @@
                                 <el-option label="SPATIAL" value="SPATIAL"></el-option>
                             </el-select>
                             </el-col>
-                            <el-col :span="8" style="cursor:pointer;color:blue;" @click.native="handleIndexClick(item)">{{formatIndexName(item)}}</el-col>
+                            <el-col :span="8" style="cursor:pointer;color:#409EFF;" @click.native="handleIndexClick(item)">{{formatIndexName(item)}}</el-col>
                         </el-form-item>
                     </el-col>
                     <el-col style="padding-right:10px;" :span="1">
                         <el-form-item>
-                            <el-checkbox v-model="item.AI" placeholder="自增"></el-checkbox>
+                            <el-checkbox v-model="item.AI" placeholder="自增" @change="handleAutoChange(item)"></el-checkbox>
                         </el-form-item>
                     </el-col>
                     <el-col :span="3" style="padding-right:10px;">
@@ -233,6 +233,17 @@ export default {
         };
     },
     methods:{
+        handleAutoChange(item){
+            console.log(item.COLUMN_NAME,item.index,item.AI);
+            if(item.AI){
+                if(item.index===''){
+                    this.indexDialogVisible = true;
+                    this.indexType2 = 'single';
+                    this.indexType = 'PRIMARY';
+                    this.indexItem = item;
+                }
+            }
+        },
         getItemByKey(arr,key){
             return arr.find(item=>item.key===key);
         },
@@ -251,9 +262,10 @@ export default {
         handleRecoveryBak(){
             this.$emit('update:form',bakForm);
         },
-        handleIndexSubmit([indexName,indexType,concatKey]){
+        handleIndexSubmit([indexName,indexType,concatKey,index]){
             this.indexItem.indexName = indexName;
             this.indexItem.indexType = indexType;
+            this.indexItem.index = index;
             const concatKeyArr = concatKey.split(',').remove('');
             const nameArr = this.form.fields.map(item=>item.COLUMN_NAME);
             this.indexItem.concatKey = [...new Set([...concatKeyArr,this.indexItem.COLUMN_NAME])];
@@ -277,6 +289,7 @@ export default {
                     }
                 })
             }
+            console.log(this.form.fields);
         },
         handleIndexChange(item){
             this.$refs['form'].validate((valid) => {
@@ -339,7 +352,7 @@ export default {
             return `${this.formatVal(field.COLUMN_NAME)} ${field.DATA_TYPE}${length}${extra}${collateVal}${nullable}${defaultVal}${ai}${comment}`;
         },
         getPrimaryString(fields){
-            const primaryArr = fields.filter(item=>item.AI).map(item=>this.formatVal(item.COLUMN_NAME));
+            const primaryArr = fields.filter(item=>item.index==='PRIMARY').map(item=>this.formatVal(item.COLUMN_NAME));
             if(primaryArr.length)
                 return `,\nPRIMARY KEY (${primaryArr.join(',')})`;
             else

@@ -6,7 +6,7 @@
     :before-close="handleClose"
     append-to-body>
         <el-form size="mini" label-position="left" label-width="80px">
-            <el-form-item label="索引类型">
+            <el-form-item label="索引类型" v-if="indexType!=='PRIMARY'">
                 <el-radio-group v-model="indexType3" @change="handleChange">
                     <el-radio label="single">单列索引</el-radio>
                     <el-radio label="multi" :disabled="indexGroup.length===0">复合索引</el-radio>
@@ -19,7 +19,7 @@
                 </el-radio-group>
             </el-form-item>
             <el-form-item label="索引名称">
-                <el-input :value="indexName" @input="hanldeIndexNameInput" placeholder="索引名称"></el-input>
+                <el-input :value="indexType==='PRIMARY'?'PRIMARY':indexName" @input="hanldeIndexNameInput" placeholder="索引名称" :readonly="indexType==='PRIMARY'"></el-input>
             </el-form-item>
             <el-form-item label="索引选择">
                 {{indexType}}
@@ -83,7 +83,7 @@ export default {
             this.$emit('update:visible',false);
         },
         handleSubmit(){
-            this.$emit('submit',this.deepClone([this.indexName,this.indexType3,this.concatKey]));
+            this.$emit('submit',this.deepClone([this.indexName,this.indexType3,this.concatKey,this.indexType]));
             this.$nextTick(()=>{
                 this.concatKey = '';
             })
