@@ -71,7 +71,7 @@
                 <font color="#555555">{{fields[index].COLUMN_TYPE}}</font>
                 <p style="font-size:12px;color:red;line-height:14px;">{{fields[index].COLUMN_COMMENT}}</p>
               </template>
-              <template slot-scope="scope"><div class="table-child single-row" :style="{color:scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete?'plaintext-only':false" @focus="handleFocus" v-text="scope.row[item.name]===null?'NULL':scope.row[item.name]" @blur="(e)=>{handleUpdate(e,item.name,e.target.innerText,scope.row)}"></div></template>
+              <template slot-scope="scope"><div class="table-child single-row" :style="{color:scope.row[item.name]===null?'#999999':''}" :contenteditable="canDelete?'plaintext-only':false" @focus="handleFocus" @click="handleFocus" v-clickoutside="handleOutSide" v-text="scope.row[item.name]===null?'NULL':scope.row[item.name]" @blur="(e)=>{handleUpdate(e,item.name,e.target.innerText,scope.row)}"></div></template>
             </el-table-column>
           </template>
         </el-table>
@@ -775,7 +775,7 @@ export default {
         if(!isMultisql&&res.data.hasOwnProperty("fields")){
           console.log('tableData',res.data.rows);
           this.tableData = res.data.rows;
-          if(type === 'select'){
+          if(type === 'select'|| type ==='show'){
             const isFieldsChange = this.isFieldsChange(this.fields,res.data.fields);
             console.log(isFieldsChange);
             if(isFieldsChange){
@@ -876,6 +876,9 @@ export default {
       handleFocus(e){
         e.target.classList.remove('single-row');
         bacCellText = e.target.innerText;
+      },
+      handleOutSide(e,el){
+        el.classList.add('single-row');
       },
       async handleUpdate(e,key,value,row){
         e.target.classList.add('single-row');

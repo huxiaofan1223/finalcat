@@ -5,6 +5,8 @@ import store from './store'
 import request from './utils/request'
 import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
+import ClickOutSide from './utils/ClickOutSide'
+Vue.directive('clickoutside',ClickOutSide);
 Vue.use(ElementUI);
 
 import Contextmenu from "vue-contextmenujs/dist/contextmenu.umd"
