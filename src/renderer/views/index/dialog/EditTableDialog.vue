@@ -62,11 +62,19 @@
                         <el-option v-for="field in insertOptions" :key="field.index" :value="field.index" :label="field.name"></el-option>
                     </el-select>
                     <el-button type="primary" size="mini" @click="handleAddField" :disabled="!canInsert">新增字段</el-button>
+                    <el-button type="primary" size="mini" @click="handleSeeIndexTable">查看索引</el-button> 
                 </el-row>
                 <el-button @click="handleClose" size="mini">取 消</el-button>
                 <!-- <el-button @click="handleSee" size="mini">查看SQL</el-button> -->
                 <!-- <el-button type="primary" native-type="submit" @click="handleSubmit" size="mini">确 定</el-button> -->
             </span>
+
+            <index-table-dialog 
+                :visible.sync="indexDialogVisible"
+                :tableData="indexArr"
+                ref="IndexTableDialog"
+                @handleRemoveIndex="handleRemoveIndex">
+            </index-table-dialog>
       </el-dialog>
 
 </template>
@@ -76,7 +84,8 @@
 import TypeSelect from '../../components/TypeSelect';
 import CollateSelect from '../../components/CollateSelect';
 import EngineSelect from '../../components/EngineSelect';
-import EditTableColumnItem from './EditTableColumnItem.vue';
+import EditTableColumnItem from './EditTableColumnItem';
+import IndexTableDialog from './IndexTableDialog';
 const defaultForm = {
     tableName:'',
     comment:'',
@@ -105,7 +114,8 @@ export default {
         TypeSelect,
         CollateSelect,
         EngineSelect,
-        EditTableColumnItem
+        EditTableColumnItem,
+        IndexTableDialog
     },
     watch:{
         form:{
@@ -157,13 +167,22 @@ export default {
             bacConfig:{},
             insertIndex:'',
             editTableNameFlag:false,
-            dragIndex:''
+            dragIndex:'',
+            indexDialogVisible:false,
+            indexArr:[]
         }
     },
-    mounted(){
-
-    },
     methods:{
+        async handleSeeIndexTable(){
+            this.indexDialogVisible = true;
+            const sql = `SHOW INDEX FROM ${this.formatVal(this.form.tableName)}`;
+            const indexArr = await this.$parent.resultSql(sql);
+            this.indexArr = indexArr.data.rows;
+        },
+        async handleRemoveIndex(indexName){
+            const sql = `ALTER TABLE ${this.formatVal(this.form.tableName)} DROP INDEX ${this.formatVal(indexName)}`;
+            await this.$parent.resultSql(sql);
+        },
         dragenter(e, index) {
             e.preventDefault();
         },
