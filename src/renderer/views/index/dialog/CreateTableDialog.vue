@@ -216,22 +216,6 @@ export default {
             indexName:''
         }
     },
-    created(){
-        Array.prototype.remove = function(val) { 
-            var index = this.indexOf(val); 
-            if (index > -1) { 
-                this.splice(index, 1); 
-            }
-            return this;
-        };
-        Array.prototype.replace = function(oldVal,newVal) { 
-            var index = this.indexOf(oldVal,newVal); 
-            if (index > -1) { 
-                this.splice(index,1,newVal); 
-            }
-            return this;
-        };
-    },
     methods:{
         handleAutoChange(item){
             console.log(item.COLUMN_NAME,item.index,item.AI);
