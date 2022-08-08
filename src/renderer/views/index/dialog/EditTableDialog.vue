@@ -180,8 +180,16 @@ export default {
             this.indexArr = indexArr.data.rows;
         },
         async handleRemoveIndex(indexName){
-            const sql = `ALTER TABLE ${this.formatVal(this.form.tableName)} DROP INDEX ${this.formatVal(indexName)}`;
-            await this.$parent.resultSql(sql);
+            let sql = '';
+            if(indexName==='PRIMARY')
+                sql = `ALTER TABLE ${this.formatVal(this.form.tableName)} DROP PRIMARY KEY;`
+                else
+                sql = `ALTER TABLE ${this.formatVal(this.form.tableName)} DROP INDEX ${this.formatVal(indexName)}`;
+            const result = await this.$parent.resultSql(sql);
+            if(result){
+                this.$message({message:'操作成功',type:'success'});
+                this.indexArr = this.indexArr.filter(item=>item.Key_name !== indexName);
+            }
         },
         dragenter(e, index) {
             e.preventDefault();

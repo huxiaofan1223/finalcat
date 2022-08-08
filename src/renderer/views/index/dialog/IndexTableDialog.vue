@@ -49,14 +49,12 @@ export default {
             this.$emit('update:visible',false);
         },
         handleRemove(row){
-            this.$confirm(`是否删除索引${this.formatVal(row.Column_name)}？`, '提示', {
+            this.$confirm(`是否删除索引${this.formatVal(row.Key_name)}？`, '提示', {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消',
                 type: 'warning'
             }).then(async() => {
-                this.$emit('handleRemoveIndex',row.Column_name);
-            }).catch(err=>{
-                console.log(err);
+                this.$emit('handleRemoveIndex',row.Key_name);
             })
         }
     }

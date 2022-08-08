@@ -25,6 +25,21 @@ Vue.prototype.$ShowSqlDialog = ShowSqlDialog.install;
 import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-light.css';
 
+Array.prototype.remove = function(val) { 
+  var index = this.indexOf(val); 
+  if (index > -1) { 
+      this.splice(index, 1); 
+  }
+  return this;
+};
+Array.prototype.replace = function(oldVal,newVal) { 
+  var index = this.indexOf(oldVal,newVal); 
+  if (index > -1) { 
+      this.splice(index,1,newVal); 
+  }
+  return this;
+};
+
 Vue.directive('highlight',function (el) {
     const blocks = el.querySelectorAll('pre code');
     blocks.forEach((block)=>{hljs.highlightBlock(block)})
