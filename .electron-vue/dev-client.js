@@ -1,4 +1,5 @@
 const hotClient = require('webpack-hot-middleware/client?noInfo=true&reload=true')
+import 'polyfill-object.fromentries';
 
 hotClient.subscribe(event => {
   /**
