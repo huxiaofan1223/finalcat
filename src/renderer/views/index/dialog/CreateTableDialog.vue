@@ -383,7 +383,7 @@ export default {
             return `CREATE TABLE ${this.formatVal(db)}.${this.formatVal(tableName)} (\n${fieldString}${primaryString}${indexString}\n) ${engine}${collate}${comment}`;
         },
         getIndexString(oldFields){
-            const fields = oldFields.filter(item=>item.index!==''||item.index!=='PRIMARY');
+            const fields = oldFields.filter(item=>item.index!=='' && item.index!=='PRIMARY');
             const singleArr = fields.filter(item=>item.indexType==='single');
             const singleString = singleArr.length === 0 ? '':',\n' + singleArr.map(item=>{return `${item.index} ${this.isEmpty(item.indexName)?'':this.formatVal(item.indexName)+' '}(${this.formatVal(item.COLUMN_NAME)})`}).join(',');
             const multiArr = fields.filter(item=>item.indexType==='multi'&&item.concatKey!=='');

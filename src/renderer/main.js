@@ -33,7 +33,7 @@ Array.prototype.remove = function(val) {
   return this;
 };
 Array.prototype.replace = function(oldVal,newVal) { 
-  var index = this.indexOf(oldVal,newVal); 
+  var index = this.indexOf(oldVal); 
   if (index > -1) { 
       this.splice(index,1,newVal); 
   }
