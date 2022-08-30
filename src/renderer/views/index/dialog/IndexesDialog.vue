@@ -6,20 +6,20 @@
     :before-close="handleClose"
     append-to-body>
         <el-form size="mini" label-position="left" label-width="80px">
-            <el-form-item label="索引类型" v-if="indexType!=='PRIMARY'">
-                <el-radio-group v-model="indexType3" @change="handleChange">
+            <el-form-item label="索引" v-if="indexType!=='PRIMARY'">
+                <el-radio-group v-model="isSingle2" @change="handleChange">
                     <el-radio label="single">单列索引</el-radio>
-                    <el-radio label="multi" :disabled="indexGroup.length===0">复合索引</el-radio>
+                    <el-radio label="multi" :disabled="concatKeyGroup.length===0">复合索引</el-radio>
                 </el-radio-group>
 
             </el-form-item>
-            <el-form-item label="复合索引" v-if="indexType3==='multi'">
+            <el-form-item label="复合索引" v-if="isSingle2==='multi'">
                 <el-radio-group v-model="concatKey">
-                    <el-radio v-for="(item,index) in indexGroup" :key="index" :label="item">{{item}}</el-radio>
+                    <el-radio v-for="(item,index) in concatKeyGroup" :key="index" :label="item">{{item}}</el-radio>
                 </el-radio-group>
             </el-form-item>
-            <el-form-item label="索引名称">
-                <el-input :value="indexType==='PRIMARY'?'PRIMARY':indexName" @input="hanldeIndexNameInput" placeholder="索引名称" :readonly="indexType==='PRIMARY'"></el-input>
+            <el-form-item label="索引类型">
+                <el-input :value="indexType==='PRIMARY'?'PRIMARY':indexName" @input="hanldeIndexNameInput" placeholder="索引类型" :readonly="indexType==='PRIMARY'"></el-input>
             </el-form-item>
             <el-form-item label="索引选择">
                 {{indexType}}
@@ -43,11 +43,11 @@ export default {
             type:String,
             required:true
         },
-        indexType2:{
+        isSingle:{
             type:String,
             required:true
         },
-        indexGroup:{
+        concatKeyGroup:{
             type:Array,
             required:true
         },
@@ -57,13 +57,13 @@ export default {
         }
     },
     watch:{
-        indexType2(val){
-            this.indexType3 = val;
+        isSingle(val){
+            this.isSingle2 = val;
         }
     },
     data(){
         return {
-            indexType3:this.indexType2,
+            isSingle2:this.isSingle,
             indexArr:[],
             concatKey:''
         }
@@ -76,14 +76,14 @@ export default {
             this.$emit('update:indexName',val);
         },
         handleChange(val){
-            this.$emit('update:indexType2',val);
+            this.$emit('update:isSingle',val);
         },
         handleClose(){
-            this.$emit('handleRecoveryBak');
+            this.$emit('cancel');
             this.$emit('update:visible',false);
         },
         handleSubmit(){
-            this.$emit('submit',this.deepClone([this.indexName,this.indexType3,this.concatKey,this.indexType]));
+            this.$emit('confirm',this.deepClone([this.indexName,this.isSingle2,this.concatKey,this.indexType]));
             this.$nextTick(()=>{
                 this.concatKey = '';
             })

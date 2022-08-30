@@ -136,11 +136,11 @@
             <indexes-dialog 
                 :visible.sync="indexDialogVisible" 
                 :indexType="indexType"
-                :indexType2.sync="indexType2"
-                :indexGroup="indexGroup"
+                :isSingle.sync="isSingle"
+                :concatKeyGroup="concatKeyGroup"
                 :indexName.sync="indexName"
-                @submit="handleIndexSubmit"
-                @handleRecoveryBak="handleRecoveryBak"
+                @confirm="handleIndexConfirm"
+                @cancel="handleIndexCancel"
                 ref="IndexesDialog">
             </indexes-dialog>
       </el-dialog>
@@ -210,8 +210,8 @@ export default {
             loading:false,
             indexDialogVisible:false,
             indexType:'',
-            indexType2:'single',
-            indexGroup:[],
+            isSingle:'single',
+            concatKeyGroup:[],
             indexItem:null,
             indexName:''
         }
@@ -222,7 +222,7 @@ export default {
             if(item.AI){
                 if(item.index===''){
                     this.indexDialogVisible = true;
-                    this.indexType2 = 'single';
+                    this.isSingle = 'single';
                     this.indexType = 'PRIMARY';
                     this.indexItem = item;
                 }
@@ -243,10 +243,10 @@ export default {
         handleSaveBak(){
             bakForm = this.deepClone(this.form);
         },
-        handleRecoveryBak(){
+        handleIndexCancel(){
             this.$emit('update:form',bakForm);
         },
-        handleIndexSubmit([indexName,indexType,concatKey,index]){
+        handleIndexConfirm([indexName,indexType,concatKey,index]){
             this.indexItem.indexName = indexName;
             this.indexItem.indexType = indexType;
             this.indexItem.index = index;
@@ -284,8 +284,8 @@ export default {
                     this.indexType = item.index;
                     const singleArr = this.form.fields.filter(item2=>item2.index===item.index&&!this.equals(item2,item)&&item2.indexType ==='single').map(item3=>item3.COLUMN_NAME);
                     const multiArr = [...new Set(this.form.fields.filter(item2=>item2.index===item.index&&!this.equals(item2,item)&&item2.indexType ==='multi').map(item3=>item3.concatKeyIndexArr.map(key=>this.getItemByKey(this.form.fields,key).COLUMN_NAME).join(',')))];
-                    this.indexGroup = [...singleArr,...multiArr];
-                    this.indexType2 = 'single';
+                    this.concatKeyGroup = [...singleArr,...multiArr];
+                    this.isSingle = 'single';
                     this.indexName = '';
                 } else {
                     item.index = '';
@@ -299,11 +299,11 @@ export default {
             this.indexType = item.index;
             const singleArr = this.form.fields.filter(item2=>item2.index===item.index&&!this.equals(item2,item)&&item2.indexType ==='single').map(item3=>item3.COLUMN_NAME);
             const multiArr = [...new Set(this.form.fields.filter(item2=>item2.index===item.index&&!this.equals(item2,item)&&item2.indexType ==='multi').map(item3=>item3.concatKeyIndexArr.map(key=>this.getItemByKey(this.form.fields,key).COLUMN_NAME).join(',')))];
-            this.indexGroup = [...singleArr,...multiArr];
+            this.concatKeyGroup = [...singleArr,...multiArr];
             console.log(item);
             console.log(item.concatKeyIndexArr);
             this.$refs.IndexesDialog.concatKey = item.concatKeyIndexArr.map(key=>this.getItemByKey(this.form.fields,key).COLUMN_NAME).join(',');
-            this.indexType2 = item.indexType;
+            this.isSingle = item.indexType;
             this.indexName = item.indexName;
         },
         elChangeExForArray(oldIndex, newIndex, array) {
