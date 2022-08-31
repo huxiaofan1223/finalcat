@@ -60,6 +60,23 @@ export default {
         }
     },
     methods:{
+        getConcatKeyGroup(){
+
+        },
+        getIndexName(row){
+            return row.Key_name;
+        },
+        getIsSingle(row){
+            if(row.Key_name !== 'PRIMARY'){
+                const concatArr = this.tableData.filter(item=>item.Key_name===row.Key_name);
+                if(concatArr.length === 1){
+                    return 'single'
+                } else {
+                    return 'multi'
+                }
+            }
+            return 'single';
+        },
         getIndexType(row){
             if(row.Key_name==='PRIMARY'){
                 return '';
@@ -70,12 +87,12 @@ export default {
             if(row.Index_type === 'FULLTEXT'){
                 return 'FULLTEXT'
             }
-            if(row.Index_type === 'FULLTEXT'){
-                return 'FULLTEXT'
+            if(row.Index_type === 'SPATIAL'){
+                return 'SPATIAL'
             }
         },
         handleIndexConfirm(){
-
+            
         },
         handleIndexCancel(){
 

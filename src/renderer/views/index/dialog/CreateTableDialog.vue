@@ -173,7 +173,7 @@ const defaultForm = {
             index:'',
             indexName:'',
             indexType:'single',
-            concatKey:'',
+            concatKey:'',   //包含本身
             concatKeyIndexArr:[]
         }
     ]
@@ -300,8 +300,6 @@ export default {
             const singleArr = this.form.fields.filter(item2=>item2.index===item.index&&!this.equals(item2,item)&&item2.indexType ==='single').map(item3=>item3.COLUMN_NAME);
             const multiArr = [...new Set(this.form.fields.filter(item2=>item2.index===item.index&&!this.equals(item2,item)&&item2.indexType ==='multi').map(item3=>item3.concatKeyIndexArr.map(key=>this.getItemByKey(this.form.fields,key).COLUMN_NAME).join(',')))];
             this.concatKeyGroup = [...singleArr,...multiArr];
-            console.log(item);
-            console.log(item.concatKeyIndexArr);
             this.$refs.IndexesDialog.concatKey = item.concatKeyIndexArr.map(key=>this.getItemByKey(this.form.fields,key).COLUMN_NAME).join(',');
             this.isSingle = item.indexType;
             this.indexName = item.indexName;
@@ -394,6 +392,7 @@ export default {
         handleSee(){
             this.$refs['form'].validate((valid) => {
                 if (valid) {
+                    console.log(this.form.fields);
                     const code = this.form2Sql(this.form);
                     this.$ShowSqlDialog({
                         title: `新建表SQL`,
